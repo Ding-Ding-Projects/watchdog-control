@@ -36,9 +36,9 @@ window.WATCHDOG_DOCS={
     ['deployment-recovery','Deployment and recovery','Blocked','Published image, host setup route, and verified LAN health are unavailable.'],
     ['http-api-collections','HTTP API collections','Inapplicable to the current implementation','No implemented HTTP API or published schema exists, so example endpoints and Postman collections would be invented.'],
     ['task-guides','Guided task navigation','Implemented in source','Guided workflows lead to planned articles and state their non-executing scope.'],
-    ['complete-articles','Readable feature articles','Incomplete','Current project workflows have article content; the full feature-level article inventory and Cantonese twins are not complete.'],
+    ['complete-articles','Readable feature articles','Incomplete','All nine English product feature articles are directly rendered with internal routes. Cantonese twins and manual runtime inspection remain incomplete.'],
     ['wiki-content','Wiki content inside the site','Implemented in source','Eleven chapters are rendered locally with internal navigation; GitHub wiki publication and readback are pending.'],
-    ['search','Always-visible search','Partially implemented','Plain-text search is wired. Search persistence and every required scoped search instance are unfinished.'],
+    ['search','Always-visible search','Incomplete','Search is wired for workflows, article summaries, wiki chapters, and inventory rows. Full feature-article body indexing and manual runtime verification remain incomplete.'],
     ['regex-builder','Adjacent independent regex builder','Incomplete','The builder validates JavaScript regular expressions only. Full RegexBuddy feature parity is not available.'],
     ['settings','Task-oriented settings','Incomplete','Language, tone, theme, reduced motion, reset and site-scope notices are present. The complete applicable feature inventory and real consumers are unfinished.'],
     ['language-modes','English, Cantonese, bilingual','Incomplete','English is present. Reviewed Cantonese translations and complete bilingual rendering are not.'],
@@ -54,10 +54,10 @@ window.WATCHDOG_DOCS={
     ['design-parity','Checked-in design parity','Incomplete','Design handoff is included in this lane; built and deployed parity evidence is pending.'],
     ['live-status','Live Status Hub','Blocked','No Status Hub connector is exposed to this lane. The public page does not simulate a live status feed.'],
     ['wiki-publication','GitHub wiki publication','Blocked','The wiki API returned 404 and the wiki Git endpoint reported the repository missing. Source content is prepared locally.'],
-    ['pages-deployment','GitHub Pages deployment','Blocked','Pages is configured for this repository at https://ding-ding-projects.github.io/watchdog-control/, but GitHub currently reports no registered workflows and manual dispatch returns 404. The live URL returns 404 until workflow registration and deployment succeed.'],
-    ['homepage-link','About homepage URL','Blocked','The stored homepage field is empty. It can be set after a deployed home URL is verified.'],
+    ['pages-deployment','GitHub Pages deployment','Implemented and deployed','Pages workflow run 39943961227 succeeded for source revision 4b5d304d1d72376973ced69993e18d6d38569677. The live home and all four required local assets returned HTTP 200.'],
+    ['homepage-link','About homepage URL','Implemented and deployed','GitHub About homepage readback equals https://ding-ding-projects.github.io/watchdog-control/, and the deployed home returned HTTP 200.'],
     ['product-settings','Product settings coverage','Incomplete','Only documentation preferences are exposed here; the product has no verified build or settings surface yet.'],
     ['complete-feature-inventory','Complete site feature inventory','Incomplete','This site-specific matrix records known surfaces, but the full 110-entry feature contract catalogue has not been mapped entry by entry.'],
-    ['production-captures','Built and deployed captures','Incomplete','No deployed site exists yet. Source-only review is not runtime evidence.']
+    ['production-captures','Built and deployed captures','Incomplete','The live home and local assets respond, but this lane has no browser or approved Lowlevel surface for desktop/mobile interaction inspection or genuine captures.']
   ]
 };
