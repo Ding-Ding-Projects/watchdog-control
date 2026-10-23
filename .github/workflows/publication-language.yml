@@ -5,6 +5,7 @@
 # No dictionary, fixed dictionary digest, matched text or snippets belong here.
 # This check runs after transmission. Local hooks prevent transmission separately;
 # configure a required protected-branch check to prevent contaminated integration.
+# The first publication scans its root snapshot and then every descendant pre-dew.
 name: Publication language scan
 on:
   push:
@@ -50,7 +51,10 @@ jobs:
             [[ "$MANUAL_SCOPE" == current-tree-only ]] || { echo 'Explicit manual scope is unavailable.'; exit 2; }
           elif [[ "$EVENT_NAME" == push || "$EVENT_NAME" == pull_request_target ]]; then
             [[ "$BASE_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo 'Event base is unavailable.'; exit 2; }
-            [[ "$BASE_SHA" != 0000000000000000000000000000000000000000 ]] || { echo 'Event base publication is unknown.'; exit 2; }
+            if [[ "$BASE_SHA" == 0000000000000000000000000000000000000000 ]]; then
+              [[ "$EVENT_NAME" == push ]] || { echo 'Unknown event base is unsupported.'; exit 2; }
+              echo 'First publication detected; the candidate root snapshot and descendant history will both be scanned.'
+            fi
           else
             echo 'Unsupported event.'; exit 2
           fi
@@ -83,11 +87,39 @@ jobs:
         run: |
           set -euo pipefail
           set +x
+          exceptions_file="$RUNNER_TEMP/watchdog-control-publication-exceptions.json"
+          node -e 'const fs=require("node:fs");const policy=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(policy.schemaVersion!==1||policy.repository!==process.argv[2]||!policy.exceptions)process.exit(2);process.stdout.write(JSON.stringify(policy.exceptions))' \
+            "$GITHUB_WORKSPACE/trusted-policy/memory/projects/watchdog-control/publication-policy.json" \
+            "https://github.com/$GITHUB_REPOSITORY" > "$exceptions_file"
           args=(--root "$GITHUB_WORKSPACE/candidate" --tip "$CANDIDATE_SHA"
-            --exceptions-file "$GITHUB_WORKSPACE/trusted-policy/scripts/public-language-exceptions.json")
+            --exceptions-file "$exceptions_file")
           if [[ "$EVENT_NAME" == workflow_dispatch && "$MANUAL_SCOPE" == current-tree-only ]]; then
             args+=(--mode current-tree-only)
           elif [[ "$EVENT_NAME" == push || "$EVENT_NAME" == pull_request_target ]]; then
+            if [[ "$EVENT_NAME" == push && "$BASE_SHA" == 0000000000000000000000000000000000000000 ]]; then
+              roots=$(git -C "$GITHUB_WORKSPACE/candidate" rev-list --max-parents=0 "$CANDIDATE_SHA")
+              [[ $(wc -w <<<"$roots") -eq 1 ]] || { echo 'Candidate must have exactly one root pre-dew for first-publication scanning.'; exit 2; }
+              root_sha="$roots"
+              root_args=(--root "$GITHUB_WORKSPACE/candidate" --tip "$root_sha" --mode current-tree-only --exceptions-file "$exceptions_file")
+              history_args=(--root "$GITHUB_WORKSPACE/candidate" --tip "$CANDIDATE_SHA" --mode history --base "$root_sha" --exceptions-file "$exceptions_file")
+              run_scan() {
+                local -a scan_args=("$@")
+                node -e 'process.stdout.write(process.env.PUBLICATION_DICTIONARY || "")' |
+                  env -u NODE_OPTIONS -u NODE_PATH -u GIT_DIR -u GIT_WORK_TREE \
+                    -u GIT_COMMON_DIR -u GIT_INDEX_FILE -u GIT_OBJECT_DIRECTORY \
+                    -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_CONFIG -u GIT_CONFIG_COUNT \
+                    -u GIT_CONFIG_PARAMETERS \
+                    node "$GITHUB_WORKSPACE/trusted-policy/scripts/run-publication-language-ci.mjs" "${scan_args[@]}"
+              }
+              run_scan "${root_args[@]}"
+              run_scan "${history_args[@]}"
+              {
+                echo '### First-publication history coverage'
+                echo "- Root tree scan: passed for $root_sha."
+                echo "- Descendant history scan: passed from $root_sha through $CANDIDATE_SHA."
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
             args+=(--mode history --base "$BASE_SHA")
           else
             echo 'Unsupported event scope.'; exit 2

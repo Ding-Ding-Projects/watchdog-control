@@ -36,7 +36,8 @@ try {
     $stagedDestination = "$destination.$PID.tmp"
     Copy-Item -LiteralPath $source -Destination $stagedDestination -Force
     if (Test-Path -LiteralPath $destination -PathType Leaf) {
-        [System.IO.File]::Replace($stagedDestination, $destination, $null)
+        $previousPackage = Join-Path $root ('artifacts\WatchdogControlSetup.previous-' + (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssfffZ', [System.Globalization.CultureInfo]::InvariantCulture) + '.exe')
+        [System.IO.File]::Replace($stagedDestination, $destination, $previousPackage)
     }
     else {
         [System.IO.File]::Move($stagedDestination, $destination)

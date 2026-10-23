@@ -1,6 +1,6 @@
 # Automatic setup assistant
 
-**Source state: implementation present. Root build: passed on 2026-10-23 with 0 warnings and 0 errors. Package state: pending.** The root installer entrypoint publishes the tailored WPF wizard as a self-contained executable and records its source revision in the built assembly. The package size and SHA-256 will be recorded after the exact root `build-installer.bat` entrypoint completes and the output is read back. The setup flow has not been run through installation on the supported host. No public product release or remote container installation is verified.
+**Source state: implementation present. Root build: passed on 2026-10-23 with 0 warnings and 0 errors. Local package: built and read back from revision `f4850abe2a63605d2f25ee26b293489a3f235a27`; final-source rebuild: pending.** The root installer entrypoint publishes the tailored WPF wizard as a self-contained executable and records its source revision in the built assembly. The prior package was 68,076,800 bytes with SHA-256 `8E7D297FF042D4B3C047391DAA7DBAD078BE02B8EAA4E9906BA793EC1ABCFB03`. The setup flow has not been run through installation on the supported host. No public product release or remote container installation is verified.
 
 ## Start or resume setup
 

@@ -1,32 +1,13 @@
 # Closeout prompt
 
-Continue Watchdog Control in `Ding-Ding-Projects/watchdog-control` from local `main` at
-`62853a520290e0b5188dfa0b3869e9a631bbd8be`, with the current task source staged. The repository
-is public. Its GitHub default is `ai/docs/20261023-public-documentation`, and no `main` ref is
-published. Reconcile that destination before any push. Keep product source, documentation, host
-configuration, container delivery, and verification states factual and separate.
+Continue the public `Ding-Ding-Projects/watchdog-control` project from local `main` at `f4850abe2a63605d2f25ee26b293489a3f235a27`. The local tree contains task-owned edits for verified release timing, a release-backed setup download on the documentation home, the typed-operation guide, and accurate project handoff records. Review the full diff before preserving it. Do not run tests or lint.
 
-Implement an authenticated Windows host management dashboard and LAN API using a fixed,
-typed operation catalog. Preserve the security boundary against arbitrary shell input and
-require fresh confirmation plus an audit record for shutdown and restart.
+The GitHub default remains `ai/docs/20261023-public-documentation`; no `main` ref is published. Two task branches are already merged into local `main`. Publish the completed `main` through the normal route, then set and verify it as the default. Configure the trusted publication-language scan through the supported protected settings and report the first-branch history limitation separately from any current-tree scan.
 
-Product source is present. The exact root build entrypoint succeeded with 0 warnings and 0 errors,
-and the local publication-language scan passed 129 text files with zero findings. The portable
-setup assistant package has not been built. It automates supported
-prerequisite acquisition, release verification, service preparation, immutable image pull,
-service start, HTTPS health, and LAN URL checks after the owner confirms the destination.
-Native administrator prompts, package terms, first-run setup, and any required computer restart
-remain owner actions. Container deployment is still pending because no supported authenticated
-host route is ready. The GitHub Project CLI lacks the read:project scope; do not repeat Project
-operations during this task.
+The product source contains the authenticated dashboard and API, Windows host agent, eight fixed typed operations, power challenges, audit records, tracked Compose and host controls, and a tailored single-file setup assistant. The exact root build succeeded earlier with 0 warnings and 0 errors. A 68,076,800-byte assistant with SHA-256 `8E7D297FF042D4B3C047391DAA7DBAD078BE02B8EAA4E9906BA793EC1ABCFB03` was built from source revision `f4850abe2a63605d2f25ee26b293489a3f235a27`; rebuild and verify the package from final source.
 
-Required delivery includes a published immutable container image plus a downloadable image
-archive attached to each normal release, tracked Compose configuration, both documented
-host.bat modes, the tailored portable setup assistant, a complete
-public GitHub Pages documentation website with full wiki content and working internal navigation, the
-exact repository homepage URL, and source-bound runtime evidence. Do not run tests. Do not
-report an unrun installation, release, or LAN check as verified.
+The updated release workflow must create a normal release, record actual job-start-to-publication timing, verify the immutable tag and every expected file, generate release metadata only from the verification receipt, and deploy the documentation with the direct download link. The public homepage field is already set to `https://ding-ding-projects.github.io/watchdog-control/`, and an earlier documentation deployment succeeded for an older revision. Verify the latest live page, release files, and exact stored homepage after publication.
 
-The current candidate is not committed or published. The source build is verified, but package
-publication, image availability, deployed documentation, homepage readback, LAN reachability, and
-host-operation runtime checks remain pending. Preserve the no-tests and no-lint scope.
+The assistant opened on a named hidden desktop, but its three inspected captures were solid white and UI Automation could not attach. Visual assistant acceptance remains incomplete. Product installation, container image pull, service health, authentication, LAN URL reachability, and host operations also remain unverified. Preserve existing data and unrelated services. Do not publish the service to the public Internet or initiate a host restart or shutdown.
+
+Keep remaining verification gaps explicit. Do not report a source build or release publication as proof of installation, LAN access, or host-operation behavior.

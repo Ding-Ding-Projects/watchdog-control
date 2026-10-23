@@ -2,7 +2,7 @@
 
 ## Current state
 
-The setup assistant exists in source and the exact root `build.bat` completed locally on 2026-10-23. The native installation, deployment, and LAN workflows have not been exercised on the supported Windows host. No published release file is verified yet.
+The setup assistant exists in source. The root build completed locally on 2026-10-23 with 0 warnings and 0 errors. The exact root `build-installer.bat` produced a 68,076,800-byte single-file package from source revision `f4850abe2a63605d2f25ee26b293489a3f235a27`, SHA-256 `8E7D297FF042D4B3C047391DAA7DBAD078BE02B8EAA4E9906BA793EC1ABCFB03`. A final-source rebuild remains required. Native installation, deployment, and LAN workflows have not been exercised on the supported host.
 
 ## Guided setup
 
@@ -53,4 +53,4 @@ The local progress record contains the last step, selected LAN address, port and
 
 ## Verification state
 
-The exact root `build.bat` completed on 2026-10-23 with 0 warnings and 0 errors. The package entrypoint has not run, so there is no verified package hash yet. The native wizard, package acquisition, App Installer registration, Docker Desktop install, resume after restart, service pull and start, LAN endpoint, and LocalSystem service path remain unverified until inspected on the supported Windows host. See [the deployment and recovery feature article](../features/deployment-recovery.md) and [the complete feature inventory](../features/README.md).
+The exact root `build.bat` completed on 2026-10-23 with 0 warnings and 0 errors. A package was built and read back from the earlier source revision noted above; rebuild from final source is pending. The native wizard, package acquisition, App Installer registration, Docker Desktop install, resume after restart, service pull and start, LAN endpoint, and LocalSystem service path remain unverified until inspected on the supported host. See [the deployment and recovery feature article](../features/deployment-recovery.md) and [the complete feature inventory](../features/README.md).

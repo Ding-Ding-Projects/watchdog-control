@@ -13,10 +13,11 @@ API. The project is intended to cover practical host administration such as heal
 processes, event logs, storage, networking, updates, firewall state, and carefully confirmed
 power actions.
 
-Host operations will be exposed through typed actions and a documented operation catalog.
-The public API will not accept arbitrary shell text or caller-selected executables and paths.
-Authentication, authorization, audit records, and a second confirmation for shutdown and
-restart are required before any destructive action is considered ready.
+Host operations use typed actions and a documented operation catalog. The public API does not
+accept arbitrary shell text or caller-selected executables and paths. Authentication,
+authorization, audit records, and exact confirmations protect destructive actions. Computer
+restart and shutdown use a short-lived, single-use challenge. These paths are implemented in
+source; live host behavior remains unverified.
 
 ## Project state
 
@@ -26,10 +27,11 @@ self-contained single-file executable, embeds its source revision and build time
 SHA-256 sidecar beside the output. The setup guide describes the stable packaging contract; each
 published release carries checksums for its actual downloads.
 
-No product release or container image has been published from this source yet. A public
-release, actual container-hosted service, independent LAN client connection, and host-action
-verification remain outstanding. The roadmap records those gaps separately from local source
-and build evidence.
+The tailored setup assistant has been packaged locally, but it must be rebuilt from the final
+source before release. Release and image availability are reported from verified release metadata
+on the documentation home. An actual container-hosted service, independent LAN client connection,
+and host-action verification remain outstanding. The roadmap records those gaps separately from
+local source and build evidence.
 
 ## Automatic setup assistant
 

@@ -1,6 +1,6 @@
 # Feature workflows
 
-The product source contains the dashboard, authenticated API, host agent, fixed operation catalog, and tailored WPF setup assistant. The exact root `build.bat` completed on 2026-10-23 with 0 warnings and 0 errors. The exact `build-installer.bat` package run remains pending. Local builds do not prove a release, installed service, remote LAN access, or a host operation.
+The product source contains the dashboard, authenticated API, host agent, fixed operation catalog, and tailored WPF setup assistant. The exact root `build.bat` completed on 2026-10-23 with 0 warnings and 0 errors. The exact root `build-installer.bat` also completed from source revision `f4850abe2a63605d2f25ee26b293489a3f235a27`; rebuild it from the final source before release. Local builds do not prove publication, an installed service, remote LAN access, or a host operation.
 
 ## Host information
 
@@ -27,11 +27,11 @@ The product source contains the dashboard, authenticated API, host agent, fixed 
 | Event logs | Implemented in source | Bounded collection and dashboard records exist; runtime query remains unverified. |
 | Storage and networking | Implemented in source | Host records and views exist; LAN installation and live values remain unverified. |
 | Updates and firewall | Read-only source workflow | Status is collected and shown; remote mutation is intentionally unavailable. |
-| Typed operation catalog | Implemented in source | Server validates fixed identifiers and target records; runtime enforcement remains unverified. |
+| Typed operation catalog | Implemented in source | Eight typed operations, current target validation, exact destructive-action confirmations, one-time power challenges, and audit writes are present; live enforcement remains unverified. |
 | Restart and shutdown | Implemented in source | The API issues a short-lived challenge and exact confirmation; no host power operation was run during this work. |
 | Authentication, pairing, and audit | Implemented in source | Pairing, sessions, revocation, and audit records exist; installed security behavior remains unverified. |
-| Deployment and recovery | Implemented in source | Compose, host entrypoint, health flow, and setup source exist; public image and LAN runtime are pending. |
-| Automatic setup assistant | Tailored WPF source present; package verification pending | Root build passed with 0 warnings and 0 errors; package entrypoint, native installation, and restart-resume flow have not been exercised. |
+| Deployment and recovery | Implemented in source | Compose, host entrypoint, health flow, and setup source exist; release availability is reported on the documentation home and LAN runtime remains pending. |
+| Automatic setup assistant | Tailored WPF source and local package present | Root build passed with 0 warnings and 0 errors. A 68,076,800-byte package was built from revision `f4850abe2a63605d2f25ee26b293489a3f235a27`; rebuild from final source is pending. Native installation and restart-resume remain unverified. |
 | Controller HTTP API | Implemented in source | The complete Postman category/master collections cover 17 routes; no live request has been exercised. |
 
 ## HTTP API materials
@@ -40,8 +40,8 @@ The project has an HTTP API. Its routes are defined in `src/Watchdog.Web/Program
 
 ## Product acceptance still open
 
-- The public release and downloadable setup assistant are not yet verified.
-- The public container image has not been published or pulled through the tracked Compose file.
+- Release and image availability are reported from verified release metadata on the documentation home.
+- A host-side image pull through the tracked Compose file is still pending.
 - A remote container-hosted web app, health check, and LAN URL have not been verified.
 - The real built dashboard and wizard have not been driven on the supported Windows host, and no current screenshots are available.
 - The documentation site still has incomplete settings coverage and does not meet full RegexBuddy parity.

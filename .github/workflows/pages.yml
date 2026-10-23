@@ -20,6 +20,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - name: Set up Node.js for release metadata verification
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
       - name: Prepare static documentation
         shell: bash
         run: |
@@ -27,6 +31,13 @@ jobs:
           test -f docs/index.html
           test -f docs/assets/site.js
           test -f docs/assets/content.js
+      - name: Prepare a download only from a verified normal release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SITE_RELEASE_FROM_LATEST: 'true'
+          RELEASE_READBACK_DIR: ${{ runner.temp }}/watchdog-release-readback
+        run: node scripts/prepare-site-release.mjs
       - name: Upload Pages content
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
         with:

@@ -1,6 +1,6 @@
 # Watchdog Control documentation
 
-Watchdog Control is a LAN-scoped management dashboard with an authenticated API and a Windows host agent. Its source now includes operational workflows and a tailored setup assistant. The exact root build succeeded locally on 2026-10-23; no release or installed runtime has been verified.
+Watchdog Control is a LAN-scoped management dashboard with an authenticated API and a Windows host agent. Its source includes typed operational workflows and a tailored setup assistant. The exact root build succeeded locally on 2026-10-23, and a local setup package was built from an earlier source revision; no release or installed runtime has been verified.
 
 ## Start with a task
 
@@ -13,7 +13,7 @@ Watchdog Control is a LAN-scoped management dashboard with an authenticated API 
 
 ## Delivery state
 
-Product source and a local build are available. The public image, normal release files, deployment to a real host, client-side LAN reachability, and installed management behavior remain pending. The site demonstrations only update visitor-owned page state; they do not connect to or control a Windows host.
+Product source, a local build, and an earlier local setup package are available. The home page exposes release availability only after a normal release and its files are verified. Deployment to a real host, client-side LAN reachability, and installed management behavior remain separate checks. The site demonstrations only update visitor-owned page state; they do not connect to or control a Windows host.
 
 ## Articles
 

@@ -40,8 +40,52 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  release-check:
+    name: Check whether this version already has a release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      should_release: ${{ steps.version-tag.outputs.should_release }}
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js for the pinned GitHub CLI
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+      - name: Ensure the pinned GitHub CLI is available
+        run: node scripts/bootstrap-gh-cli.mjs
+      - name: Resolve version and preserve existing normal releases
+        id: version-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(tr -d '\r\n' < VERSION)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'VERSION must be a three-part numeric version.'; exit 2; }
+          tag="v$version"
+          release_tags="$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name')"
+          if grep -Fxq "$tag" <<< "$release_tags"; then
+            normal="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq '(.draft == false) and (.prerelease == false)')"
+            [[ "$normal" == true ]] || { echo 'The existing version tag is not a normal release.'; exit 2; }
+            echo "Release $tag already exists as a normal release; keeping its source and assets unchanged."
+            echo 'should_release=false' >> "$GITHUB_OUTPUT"
+          else
+            echo "No release exists for $tag; this source may create the normal release."
+            echo 'should_release=true' >> "$GITHUB_OUTPUT"
+          fi
+
   image-build:
     name: Build and publish the container image
+    needs: [release-check]
+    if: github.ref != 'refs/heads/main' || needs.release-check.outputs.should_release == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -132,7 +176,7 @@ jobs:
       - name: Make the published package public and read back its visibility
         if: github.ref == 'refs/heads/main'
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.ORG_TOKEN || github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.ORG_TOKEN || secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
@@ -169,16 +213,24 @@ jobs:
 
   release:
     name: Create and verify the normal release
-    if: github.ref == 'refs/heads/main'
-    needs: [windows-build, image-build]
+    if: github.ref == 'refs/heads/main' && needs.release-check.outputs.should_release == 'true'
+    needs: [windows-build, image-build, release-check]
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    concurrency:
+      group: pages-${{ github.ref }}
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.site-deployment.outputs.page_url }}
     permissions:
       actions: read
       contents: write
       packages: read
+      pages: write
+      id-token: write
     env:
-      GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.ORG_TOKEN || github.token }}
+      GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.ORG_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out exact release source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -232,14 +284,35 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Watchdog Control $RELEASE_TAG" \
             --notes-file "docs/releases/${RELEASE_TAG}.md"
+      - name: Record actual workflow timing in the release notes
+        env:
+          RELEASE_TAG: v${{ needs.image-build.outputs.release_version }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: node scripts/update-release-timing.mjs
       - name: Read back the release, tag target, and every downloadable file
         env:
           RELEASE_TAG: v${{ needs.image-build.outputs.release_version }}
           SOURCE_COMMIT: ${{ github.sha }}
           RELEASE_REPOSITORY: ${{ github.repository }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
           RELEASE_ASSET_DIR: ${{ github.workspace }}/release-assets
           REMOTE_ASSET_DIR: ${{ github.workspace }}/release-readback
         run: node scripts/verify-release.mjs
+      - name: Prepare the verified setup download for the documentation site
+        env:
+          RELEASE_TAG: v${{ needs.image-build.outputs.release_version }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: node scripts/prepare-site-release.mjs
+      - name: Upload release-verified documentation
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
+        with:
+          path: docs
+      - name: Deploy documentation with the verified release download
+        id: site-deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346
       - name: Upload safe release outputs and verification, including failures
         if: always()
         continue-on-error: true

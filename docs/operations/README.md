@@ -1,6 +1,6 @@
 # Operations and recovery
 
-This guide covers setup and service recovery for the source implementation. The root `build.bat` completed locally on 2026-10-23. Public release, image publication, live installation, and remote-client reachability are not verified.
+This guide covers setup and service recovery for the source implementation. The root `build.bat` completed locally on 2026-10-23. The documentation home reports release availability from verified normal-release metadata; live installation and remote-client reachability still require host evidence.
 
 ## Start with the task
 

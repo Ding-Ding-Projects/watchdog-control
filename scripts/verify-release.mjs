@@ -3,19 +3,26 @@ import { execFileSync } from 'node:child_process';
 import { createReadStream } from 'node:fs';
 import { mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { readReleaseTiming, publicationTimingSection } from './release-timing.mjs';
 
 const repository = process.env.RELEASE_REPOSITORY || process.env.GITHUB_REPOSITORY || '';
 const tag = process.env.RELEASE_TAG || '';
 const sourceCommit = process.env.SOURCE_COMMIT || '';
+const workflowRunId = process.env.WORKFLOW_RUN_ID || '';
 const localDir = path.resolve(process.env.RELEASE_ASSET_DIR || 'release-assets');
 const remoteDir = path.resolve(process.env.REMOTE_ASSET_DIR || 'release-readback');
 if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('RELEASE_REPOSITORY is malformed.');
 if (!/^v[0-9]+\.[0-9]+\.[0-9]+$/.test(tag)) throw new Error('RELEASE_TAG is malformed.');
 if (!/^[a-f0-9]{40}$/.test(sourceCommit)) throw new Error('SOURCE_COMMIT must be the full expected source SHA.');
+if (!/^\d+$/.test(workflowRunId)) throw new Error('WORKFLOW_RUN_ID is malformed.');
 
 const run = (args, encoding = 'utf8') => execFileSync('gh', args, { encoding, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
 const release = JSON.parse(run(['api', `repos/${repository}/releases/tags/${tag}`]));
 if (release.tag_name !== tag || release.draft !== false || release.prerelease !== false) throw new Error('The stored release is not the intended normal release.');
+const workflowTiming = await readReleaseTiming(repository, workflowRunId, tag, sourceCommit);
+if ((release.body || '').trimEnd().split('\n').slice(-4).join('\n') !== publicationTimingSection(workflowTiming)) {
+  throw new Error('The published release notes do not contain verified workflow start, release publication, and elapsed-time values.');
+}
 
 let ref = JSON.parse(run(['api', `repos/${repository}/git/ref/tags/${tag}`]));
 let object = ref.object;
@@ -64,6 +71,8 @@ const receipt = {
   tag,
   sourceCommit,
   releaseUrl: release.html_url,
+  publishedAt: workflowTiming.releasePublishedAt,
+  workflowTiming,
   normalRelease: true,
   immutableTagTarget: object.sha,
   imageReference: manifest.image.reference,
