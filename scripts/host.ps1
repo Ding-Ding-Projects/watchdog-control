@@ -19,7 +19,7 @@ function Invoke-Docker([string[]] $Arguments, [switch] $Capture) {
 
 function Read-Configuration {
     if (-not (Test-Path -LiteralPath $compose -PathType Leaf)) { throw 'The tracked compose.yaml file is missing.' }
-    if (-not (Test-Path -LiteralPath $envFile -PathType Leaf)) { throw 'Copy .env.example to .env and fill in the published digest, host port, storage path and protected file paths.' }
+    if (-not (Test-Path -LiteralPath $envFile -PathType Leaf)) { throw 'Copy default.env.example from the release, or .env.example from the source checkout, to .env and fill in the published digest, host port, storage path and protected file paths.' }
     $values = @{}
     foreach ($line in Get-Content -LiteralPath $envFile) {
         $trimmed = $line.Trim()

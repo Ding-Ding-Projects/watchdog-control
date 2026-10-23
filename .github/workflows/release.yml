@@ -267,7 +267,7 @@ jobs:
             release-assets/compose.yaml \
             release-assets/host.bat \
             release-assets/host.ps1 \
-            release-assets/.env.example \
+            release-assets/default.env.example \
             release-assets/watchdog-release-manifest.json \
             release-assets/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \

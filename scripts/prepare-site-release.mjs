@@ -30,16 +30,23 @@ const expectedAssets = [
   'compose.yaml',
   'host.bat',
   'host.ps1',
-  '.env.example',
+  'default.env.example',
   'watchdog-release-manifest.json',
   'SHA256SUMS.txt',
 ].sort();
 
+async function markDownloadUnavailable(message) {
+  await writeFile(path.join(root, 'docs', 'assets', 'release.json'), `${JSON.stringify({ schemaVersion: 1, release: null }, null, 2)}\n`, 'utf8');
+  process.stdout.write(`${message}\n`);
+  return null;
+}
+
 async function prepareFromReceipt() {
   if (!/^v\d+\.\d+\.\d+$/.test(tag)) throw new Error('RELEASE_TAG is malformed.');
   if (!/^[a-f0-9]{40}$/.test(sourceCommit)) throw new Error('SOURCE_COMMIT must be the full source SHA.');
+  const readback = path.resolve(process.env.RELEASE_READBACK_DIR || path.join(root, 'release-readback'));
   const receipt = JSON.parse(await readFile(path.join(root, 'release-verification.json'), 'utf8'));
-  const manifest = JSON.parse(await readFile(path.join(root, 'release-readback', 'watchdog-release-manifest.json'), 'utf8'));
+  const manifest = JSON.parse(await readFile(path.join(readback, 'watchdog-release-manifest.json'), 'utf8'));
   if (receipt.repository !== repository || receipt.tag !== tag || receipt.sourceCommit !== sourceCommit || receipt.normalRelease !== true) {
     throw new Error('The release verification receipt does not match the intended normal release and source.');
   }
@@ -48,6 +55,13 @@ async function prepareFromReceipt() {
   }
   if (manifest.version !== tag || manifest.sourceCommit !== sourceCommit || receipt.imageReference !== manifest.image?.reference) {
     throw new Error('The downloaded manifest does not match the verified release receipt.');
+  }
+  const compose = receipt.assets?.find(asset => asset.name === 'compose.yaml');
+  const composePath = path.join(readback, 'compose.yaml');
+  const composeHash = manifest.service?.composeSha256;
+  if (!compose || !/^[a-f0-9]{64}$/.test(composeHash || '') || compose.sha256 !== composeHash ||
+      await sha256(composePath) !== composeHash) {
+    throw new Error('The downloaded Compose file does not match the verified release receipt and manifest.');
   }
   const installer = receipt.assets?.find(asset => asset.name === 'WatchdogControlSetup.exe');
   if (!installer || !Number.isSafeInteger(installer.size) || installer.size < 1 || !/^[a-f0-9]{64}$/.test(installer.sha256 || '')) {
@@ -62,9 +76,7 @@ async function prepareFromLatestRelease() {
     .filter(item => item.draft === false && item.prerelease === false && Number.isFinite(Date.parse(item.published_at || '')))
     .sort((left, right) => Date.parse(right.published_at) - Date.parse(left.published_at))[0];
   if (!release) {
-    await writeFile(path.join(root, 'docs', 'assets', 'release.json'), '{\n  "schemaVersion": 1,\n  "release": null\n}\n', 'utf8');
-    process.stdout.write('No normal release is published; the documentation download remains unavailable.\n');
-    return null;
+    return markDownloadUnavailable('No normal release is published; the documentation download remains unavailable.');
   }
   if (!/^v\d+\.\d+\.\d+$/.test(release.tag_name)) throw new Error('The latest normal release tag is malformed.');
   const assets = (release.assets || []).map(asset => asset.name).sort();
@@ -83,14 +95,24 @@ async function prepareFromLatestRelease() {
   run([
     'release', 'download', release.tag_name, '--repo', repository, '--dir', readback,
     '--pattern', 'WatchdogControlSetup.exe',
+    '--pattern', 'compose.yaml',
     '--pattern', 'watchdog-release-manifest.json',
     '--pattern', 'SHA256SUMS.txt',
   ]);
   const manifest = JSON.parse(await readFile(path.join(readback, 'watchdog-release-manifest.json'), 'utf8'));
-  if (manifest.version !== release.tag_name || manifest.sourceCommit !== object.sha ||
+  const composeDigestMissing = !Object.hasOwn(manifest.service || {}, 'composeSha256');
+  const composeDigest = manifest.service?.composeSha256;
+  if (manifest.schemaVersion !== 1 || manifest.version !== release.tag_name || manifest.sourceCommit !== object.sha ||
       manifest.image?.archiveAsset !== 'watchdog-control-image-linux-amd64.tar' ||
       !/^ghcr\.io\/ding-ding-projects\/watchdog-control@sha256:[a-f0-9]{64}$/.test(manifest.image?.reference || '') ||
-      !/^[a-f0-9]{64}$/.test(manifest.image?.archiveSha256 || '')) {
+      !/^[a-f0-9]{64}$/.test(manifest.image?.archiveSha256 || '') ||
+      manifest.service?.name !== 'watchdog' || manifest.service?.containerPort !== 8443 ||
+      manifest.service?.healthPath !== '/health' || manifest.service?.dataPath !== '/var/lib/watchdog-control' ||
+      manifest.service?.pairingCodeFile !== '/run/secrets/watchdog_pairing_code' ||
+      manifest.service?.agentEnrollmentCodeFile !== '/run/secrets/watchdog_agent_enrollment_code' ||
+      manifest.tls?.certificateFile !== '/run/secrets/watchdog_tls_certificate' ||
+      manifest.tls?.passwordFile !== '/run/secrets/watchdog_tls_password' ||
+      (!composeDigestMissing && !/^[a-f0-9]{64}$/.test(composeDigest || ''))) {
     throw new Error('The downloaded release manifest does not match the immutable release tag and image.');
   }
 
@@ -99,14 +121,33 @@ async function prepareFromLatestRelease() {
     const match = line.match(/^([a-f0-9]{64})\s+\*?(.+)$/u);
     return match ? [match[2], match[1]] : null;
   }).filter(Boolean));
-  if (checksums.get('watchdog-release-manifest.json') !== await sha256(path.join(readback, 'watchdog-release-manifest.json')) ||
-      checksums.get('WatchdogControlSetup.exe') !== await sha256(path.join(readback, 'WatchdogControlSetup.exe')) ||
-      checksums.get('watchdog-control-image-linux-amd64.tar') !== manifest.image.archiveSha256) {
+  const manifestHash = await sha256(path.join(readback, 'watchdog-release-manifest.json'));
+  const installerHash = await sha256(path.join(readback, 'WatchdogControlSetup.exe'));
+  const composeHash = await sha256(path.join(readback, 'compose.yaml'));
+  const checksumAsset = release.assets.find(asset => asset.name === 'SHA256SUMS.txt');
+  const manifestAsset = release.assets.find(asset => asset.name === 'watchdog-release-manifest.json');
+  const installerMetadata = release.assets.find(asset => asset.name === 'WatchdogControlSetup.exe');
+  const imageArchiveAsset = release.assets.find(asset => asset.name === 'watchdog-control-image-linux-amd64.tar');
+  const composeAsset = release.assets.find(asset => asset.name === 'compose.yaml');
+  const releaseAssetDigestMatches = (asset, digest) => !asset?.digest || asset.digest === `sha256:${digest}`;
+  if (!/^[a-f0-9]{64}$/.test(checksums.get('watchdog-release-manifest.json') || '') ||
+      !/^[a-f0-9]{64}$/.test(checksums.get('WatchdogControlSetup.exe') || '') ||
+      !/^[a-f0-9]{64}$/.test(checksums.get('watchdog-control-image-linux-amd64.tar') || '') ||
+      !/^[a-f0-9]{64}$/.test(checksums.get('compose.yaml') || '') ||
+      checksums.get('watchdog-release-manifest.json') !== manifestHash ||
+      checksums.get('WatchdogControlSetup.exe') !== installerHash ||
+      checksums.get('watchdog-control-image-linux-amd64.tar') !== manifest.image.archiveSha256 ||
+      checksums.get('compose.yaml') !== composeHash ||
+      (!composeDigestMissing && composeHash !== composeDigest) ||
+      !releaseAssetDigestMatches(checksumAsset, await sha256(path.join(readback, 'SHA256SUMS.txt')) ) ||
+      !releaseAssetDigestMatches(manifestAsset, manifestHash) ||
+      !releaseAssetDigestMatches(installerMetadata, installerHash) ||
+      !releaseAssetDigestMatches(imageArchiveAsset, manifest.image.archiveSha256) ||
+      !releaseAssetDigestMatches(composeAsset, composeHash)) {
     throw new Error('The latest release assets do not match their published checksums and image manifest.');
   }
 
   const installerInfo = await stat(path.join(readback, 'WatchdogControlSetup.exe'));
-  const installerMetadata = release.assets.find(asset => asset.name === 'WatchdogControlSetup.exe');
   if (installerInfo.size !== installerMetadata.size ||
       (installerMetadata.digest && installerMetadata.digest !== `sha256:${checksums.get('WatchdogControlSetup.exe')}`)) {
     throw new Error('The verified setup assistant size or asset digest differs from the release metadata.');
@@ -114,6 +155,9 @@ async function prepareFromLatestRelease() {
   const timing = (release.body || '').match(/## Release publication timing\n- Workflow run started: (\d{4}-\d\d-\d\dT[^\n]+)\n- Normal release published: (\d{4}-\d\d-\d\dT[^\n]+)\n- Elapsed to publication: (\d{2,}:\d\d:\d\d)\s*$/u);
   if (!timing || !Number.isFinite(Date.parse(timing[1])) || Date.parse(timing[2]) !== Date.parse(release.published_at)) {
     throw new Error('The latest normal release notes lack verified publication timing.');
+  }
+  if (composeDigestMissing) {
+    return markDownloadUnavailable(`The latest normal release ${release.tag_name} has no service.composeSha256; the documentation will deploy without a verified download.`);
   }
   return {
     tag: release.tag_name,

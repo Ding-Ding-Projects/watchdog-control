@@ -2,37 +2,32 @@
 
 ## Current state
 
-The public source repository `Ding-Ding-Projects/watchdog-control` has source `eee14898d840d4d0e5335cdff389727c179d3542` on local and GitHub `main`. The default branch is `main`, and the repository homepage is `https://ding-ding-projects.github.io/watchdog-control/`.
+The public repository `Ding-Ding-Projects/watchdog-control` is on `main`. Its last verified source before the current changes was `5d19bb463b624a60b38aae360f607572fa003b8a`.
 
-The committed source pins the .NET SDK and ASP.NET runtime images by digest and makes the publication-language workflow check out the pinned trusted policy from `Ding-Ding-Projects/agent-global-memory`. The current task has an uncommitted release-workflow correction: it removes a package-visibility API call that returned HTTP 404 and leaves the following credential-free pull as the public-access proof.
+The immutable container image for that source is available at `ghcr.io/ding-ding-projects/watchdog-control@sha256:8a652e9a5a5704a62abd7940131e5de84a0c2ba8019088f6f0637638b8808466`; the release workflow completed an anonymous pull. Normal release `v0.1.0` targets the same source and publishes `default.env.example`. The earlier verifier expected `.env.example`, so that prior run stopped on a verifier filename mismatch. The release manifest also lacks `service.composeSha256`, which the updated assistant needs to verify its embedded Compose file. A new normal release `v0.1.1` is required for that contract; the earlier release remains immutable.
 
-The product source includes an authenticated host dashboard and API, Windows host agent, typed operation catalog, tracked Compose setup, and tailored setup assistant. The product's GitHub release, published image, current-site verification, local service installation, Compose start, and LAN acceptance remain incomplete.
+Current source changes prepare the corrected asset name, add a Compose SHA-256 to the release manifest, embed `compose.yaml` in the setup assistant, add a one-click local hosting action, and make double-clicking `host.bat` default to starting the service after an eight-second menu timeout. The new assistant path requires an already-ready local Docker Engine and does not install Docker or the optional host agent.
 
-## Verified facts
+The current root `build.bat` completed on 2026-10-23 with 0 warnings and 0 errors for the latest source. The updated single-file assistant has not yet been built or inspected. No product container has been started. The earlier setup assistant capture was blank and remains historical, not current UI evidence.
 
-- The exact root `build.bat` completed on the current working source with 0 warnings and 0 errors. No tests or lint were run.
-- Docker Engine client and server both report version `29.9.2`.
-- A local `linux/amd64` image build succeeded with the digest-pinned .NET images. It was loaded as `watchdog-control:working-tree` with manifest-list digest `sha256:e5cf4481446e9c167d1da5807f5cfc3277a2340c00f44aeded3227cd44f60e05`. It used `VCS_REF=working-tree` while changes were uncommitted, so it is not source-bound release evidence. No container was started.
-- The previous build-and-publish run `39991432834` failed because the selected Debian ASP.NET image tag was unavailable. The Dockerfile now selects the verified `10.0.13-noble` image pinned by digest.
-- The previous publication-language run `39991433190` failed because its trusted-source checkout targeted the consumer repository. The current working-tree fix names `Ding-Ding-Projects/agent-global-memory` and the pinned policy revision.
-- The trusted local publication-language scan passed against the staged candidate: 134 text files, zero findings, and three reviewed technical-identifier observations. This verifies the current staged tree only; the workflow still needs to scan the preserved source and its history.
-- The repository secret `PUBLICATION_LANGUAGE_DATA` and variable `PUBLICATION_SCAN_POLICY_SHA` are present. The policy pin is `75de4e59fcfe16e62cd193d77816879ddaec9068`. Organization-level token fallback presence is not independently verified; the next workflow run will establish whether the checkout credential works.
-- The publication-language workflow run `39995857746` succeeded for source `eee14898d840d4d0e5335cdff389727c179d3542`, including trusted-source checkout and event-history scanning.
-- The documentation deployment run `39995857859` succeeded for source `eee14898d840d4d0e5335cdff389727c179d3542`. The currently served content, internal routes, and assets have not been inspected.
-- The image build and upload succeeded in run `39995857749`, but the package-visibility step returned HTTP 404. Anonymous pull, downloadable image archive, and release creation were skipped. The current workflow correction removes that undocumented mutation and relies on the anonymous pull step to verify public access. Rerun and readback remain pending; no normal release or verified public image exists.
-- The exact root `build-installer.bat` produced `release/WatchdogControlSetup.exe` from source `eee14898d840d4d0e5335cdff389727c179d3542`: 68,076,793 bytes, SHA-256 `674277DC5A315596ED6D965042A1581CABEFEF2DE569E4A1F9F5414F6DBEB8D7`. It is a single self-contained file. The named hidden-desktop launch succeeded, but the genuine 1180 × 780 main-window capture was solid white; visual acceptance remains open.
-- Source preservation, workflow results, and package visibility failure were posted to Issue #1 and Discussion #2. The correction and current evidence still need to be recorded there after the next workflow run.
-- The hosted wiki endpoint was unavailable during earlier verification. Prepared wiki content remains in the source; hosted publication is not verified.
-- Prior assistant captures were solid white. Visual acceptance remains incomplete. No product service has been installed or started, no Compose deployment has been run, and no host power action has been issued.
-- GitHub Projects inspection is unavailable because the current CLI token lacks `read:project`. No tests or lint have been run.
+## Verified release evidence
 
-## Remaining work
+- Release workflow run `39997342016` built the Windows delivery, published the immutable image, verified an anonymous image pull, and created normal release `v0.1.0` for source `5d19bb463b624a60b38aae360f607572fa003b8a`.
+- Published image digest: `sha256:8a652e9a5a5704a62abd7940131e5de84a0c2ba8019088f6f0637638b8808466`.
+- The earlier full release verifier stopped because it expected `.env.example`; readback of the published asset list confirms the actual `default.env.example` name. The published `v0.1.0` manifest has no `service.composeSha256`, so it cannot satisfy the updated assistant's embedded-Compose check. Full `v0.1.1` release readback remains pending.
+- Documentation deployment run `39997341634` succeeded for `5d19bb4`, but the live home, internal routes, assets, download link, and stored homepage still need readback.
+- Publication-language run `39997341659` succeeded for source `5d19bb4`.
+- Issue #1 and rolling Discussion #2 track the current work: https://github.com/Ding-Ding-Projects/watchdog-control/issues/1 and https://github.com/Ding-Ding-Projects/watchdog-control/discussions/2.
 
-1. Review the release-workflow correction and project records, run the trusted local publication-language scan, then preserve the reviewed source on `main` and verify the GitHub ref.
-2. Read back the new build-and-publish run. Require its anonymous pull to succeed before treating the registry image as public; then verify the normal release, immutable image digest, and downloadable image archive.
-3. Verify the live documentation home, article, category, and wiki routes, assets, and exact repository homepage value.
-4. Inspect a nonblank built setup assistant interface from the exact package, keeping installation and visual acceptance separate.
-5. Use the published image and tracked Compose setup to verify a real pull, startup, health, authentication, and reachable private-LAN URL while preserving existing data and unrelated services.
-6. Keep the earlier blank assistant captures as an unresolved visual-review gap until genuine current-source captures can be inspected.
+## Next work
 
-Do not report local builds as publication, package installation, live documentation, LAN access, or host-operation verification.
+1. Finish source and documentation review, then scan public-bound files for private vocabulary.
+2. Preserve the reviewed changes on `main` and verify the GitHub ref before building.
+3. Run the exact root build and packaging entrypoints, then inspect the real built assistant on the named hidden desktop. Capture genuine current screenshots with no pairing code or other sensitive values visible.
+4. Verify quick-host behavior, `host.bat` modes, release asset names, Compose digest matching, and the new `v0.1.1` release from GitHub readback.
+5. Verify deployed GitHub Pages routes and release download, then perform the authorized real container startup, authentication, health, and client-side LAN checks while preserving unrelated host state.
+6. Run automated tests last, after implementation and functional acceptance. Keep every not-yet-run test explicitly pending.
+
+## Boundaries
+
+The local host power state is never changed. Product shutdown and restart verification must use a separate authorized target. Preserve unrelated containers, volumes, data, credentials, and user configuration. A source build, release publication, server-side health response, LAN mapping, and client-side reachability are distinct evidence claims.

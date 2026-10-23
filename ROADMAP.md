@@ -1,28 +1,32 @@
 # Roadmap
 
-## 1. Product foundation
+## 1. Product workflows
 
-- [x] Create the public source repository.
-- [x] Enable GitHub Discussions and open the implementation issue.
-- [x] Define the host agent, authenticated API, pairing, and audit architecture in source.
-- [ ] Verify the productive host overview and management workflows in the built dashboard.
-- [x] Implement typed command actions and confirmed shutdown/restart; real host-action verification remains open.
-- [ ] Verify the exact installer packaging entrypoint from the latest source state. The root `build.bat` completed with 0 warnings and 0 errors, and `build-installer.bat` produced a 68,076,793-byte single-file assistant from source `eee14898d840d4d0e5335cdff389727c179d3542`, SHA-256 `674277DC5A315596ED6D965042A1581CABEFEF2DE569E4A1F9F5414F6DBEB8D7`. A genuine hidden-desktop capture of its main window was solid white, so visual acceptance remains open.
+- [ ] Inspect the built dashboard's host overview and supported management workflows.
+- [ ] Verify typed service, process, event-log, storage, network, update, and firewall behavior on an authorized target.
+- [ ] Verify shutdown and restart confirmation, audit records, and host-side operation results without initiating a local host power action.
 
-## 2. container-hosted dashboard delivery
+## 2. One-click hosting and setup assistant
 
-- [ ] Publish an immutable container image bound to source. The build-and-publish workflow uploaded the image for source `eee14898d840d4d0e5335cdff389727c179d3542`, but run `39995857749` failed at the package-visibility API step with HTTP 404 before its anonymous pull and release steps. The workflow now relies on the following anonymous pull as the public-access proof instead of calling the unsupported visibility endpoint; rerun and readback remain pending.
-- [ ] Export the image as a downloadable file and attach it to each normal release.
-- [x] Add tracked Compose configuration and host.bat with detached and log modes; supported-host runtime verification remains open.
-- [ ] Complete the tailored single-file setup assistant package and inspect its built interface. The portable executable was rebuilt from source `eee14898d840d4d0e5335cdff389727c179d3542` and launched on the named hidden desktop, but its genuine 1180 × 780 window capture was solid white, so visual review remains pending.
-- [ ] Verify the actual LAN URL, authentication, and host operation flow.
+- [x] Build the current source through `build.bat`; completed on 2026-10-23 with 0 warnings and 0 errors.
+- [ ] Build and inspect the updated single-file setup assistant after it embeds `compose.yaml`, verifies the release Compose digest, and exposes the one-click host action.
+- [ ] Exercise the one-click route with a ready local Docker Engine, verify it does not install Docker or the optional host agent, and confirm that only the Watchdog Control Compose project starts.
+- [ ] Verify guided recovery for unavailable Docker, ambiguous LAN interfaces, occupied ports, saved data locations, and interrupted setup.
+- [ ] Capture and inspect current built-interface screenshots for the welcome, host-settings, review, and completion states; keep sensitive pairing values out of captures.
+- [ ] Verify the tailored one-file package on the supported Windows host and record any unavailable native evidence.
+- [ ] Verify `host.bat` double-click default, `--detached`, `--logs`, and explicit `--stop` behavior.
 
-## 3. documentation website and release records
+## 3. Image, release, and live service
 
-- [ ] Complete and verify task-led documentation with working internal navigation. The source now adds a release-verified installer link and contains the full typed-operation inventory; settings coverage and full RegexBuddy parity remain unfinished.
-- [ ] Publish the updated documentation website through GitHub Pages and reverify the exact repository homepage. Deployment run `39995857859` succeeded for source `eee14898d840d4d0e5335cdff389727c179d3542`; live route, content, and asset verification remain pending.
-- [ ] Verify the release download card against the actual published release, its installer hash, and the selected language mode.
-- [x] Verify the publication-language workflow against preserved source. Run `39995857746` succeeded for `eee14898d840d4d0e5335cdff389727c179d3542` after checking out the pinned trusted policy source and scanning its event history.
-- [ ] Prepare complete wiki content and publish it after wiki availability is verified.
-- [ ] Refresh the README with genuine current screenshots from the built product.
-- [ ] Complete source-bound build, security, runtime, and delivery evidence.
+- [x] Publish and anonymously pull the immutable image for source `5d19bb463b624a60b38aae360f607572fa003b8a`, digest `sha256:8a652e9a5a5704a62abd7940131e5de84a0c2ba8019088f6f0637638b8808466`.
+- [ ] Publish and fully verify normal release `v0.1.1`. The published `v0.1.0` release is normal and includes `default.env.example`; the earlier verifier incorrectly expected `.env.example`. Its manifest lacks `service.composeSha256`, which the embedded-Compose assistant now requires.
+- [ ] Verify the Compose checksum in the release manifest, matching bundled Compose bytes in the assistant, downloadable image archive, and all release assets.
+- [ ] Start the published image through the tracked Compose setup, verify container health, certificate-pinned HTTPS, owner pairing, and a real client connection through the intended private LAN URL.
+
+## 4. Documentation and remaining acceptance
+
+- [ ] Verify the deployed GitHub Pages home, articles, category routes, assets, and exact GitHub `homepage` value.
+- [ ] Publish the prepared GitHub wiki pages when the wiki endpoint is available and read back every stored page and link.
+- [ ] Refresh the README with inspected genuine captures from the final built dashboard and setup assistant.
+- [ ] Complete the remaining product documentation, settings coverage, regex parity, accessibility, localization, appearance, security, and recovery acceptance items listed in the feature inventory.
+- [ ] Run the requested automated tests after implementation and functional acceptance are complete.

@@ -41,7 +41,7 @@ const expectedAssets = [
   'compose.yaml',
   'host.bat',
   'host.ps1',
-  '.env.example',
+  'default.env.example',
   'watchdog-release-manifest.json',
   'SHA256SUMS.txt',
 ].sort();
@@ -66,6 +66,8 @@ const manifest = JSON.parse(await readFile(path.join(remoteDir, 'watchdog-releas
 if (manifest.sourceCommit !== sourceCommit || manifest.version !== tag || manifest.image?.archiveAsset !== 'watchdog-control-image-linux-amd64.tar') throw new Error('The downloaded release manifest does not match the exact source and tag.');
 const imageHash = await digest(path.join(remoteDir, manifest.image.archiveAsset));
 if (manifest.image.archiveSha256 !== imageHash) throw new Error('The downloaded image archive does not match the manifest digest.');
+const composeHash = await digest(path.join(remoteDir, 'compose.yaml'));
+if (manifest.service?.composeSha256 !== composeHash) throw new Error('The downloaded Compose file does not match the manifest digest.');
 const receipt = {
   repository,
   tag,

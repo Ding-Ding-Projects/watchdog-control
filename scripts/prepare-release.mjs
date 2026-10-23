@@ -23,7 +23,7 @@ const requiredSourceFiles = [
   [path.join(root, 'compose.yaml'), path.join(out, 'compose.yaml')],
   [path.join(root, 'host.bat'), path.join(out, 'host.bat')],
   [path.join(root, 'scripts', 'host.ps1'), path.join(out, 'host.ps1')],
-  [path.join(root, '.env.example'), path.join(out, '.env.example')],
+  [path.join(root, '.env.example'), path.join(out, 'default.env.example')],
 ];
 for (const [source, destination] of requiredSourceFiles) {
   const info = await stat(source);
@@ -38,7 +38,7 @@ const assets = [
   'compose.yaml',
   'host.bat',
   'host.ps1',
-  '.env.example',
+  'default.env.example',
   'watchdog-release-manifest.json',
 ];
 const sha256 = async file => {
@@ -47,6 +47,7 @@ const sha256 = async file => {
   return hash.digest('hex');
 };
 const imageArchiveHash = await sha256(path.join(out, 'watchdog-control-image-linux-amd64.tar'));
+const composeHash = await sha256(path.join(out, 'compose.yaml'));
 const manifest = {
   schemaVersion: 1,
   sourceCommit,
@@ -63,6 +64,7 @@ const manifest = {
     dataPath: '/var/lib/watchdog-control',
     pairingCodeFile: '/run/secrets/watchdog_pairing_code',
     agentEnrollmentCodeFile: '/run/secrets/watchdog_agent_enrollment_code',
+    composeSha256: composeHash,
   },
   tls: {
     certificateFile: '/run/secrets/watchdog_tls_certificate',

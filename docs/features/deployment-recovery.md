@@ -1,17 +1,19 @@
 # Deployment and recovery
 
-**Source state: implemented.** The Compose file, host entrypoint, Windows setup assistant, health flow, and recovery state exist in source. The root build succeeded locally on 2026-10-23. A public image, release, running service, and verified LAN URL remain pending.
+**Source state: implemented; source build passed.** The Compose file, host entrypoint, setup assistant, health flow, and recovery state exist in source. The latest root source build completed on 2026-10-23 with 0 warnings and 0 errors. The updated single-file assistant package still needs to be built and inspected. Normal release `v0.1.0` publishes `default.env.example`; the earlier verifier incorrectly expected `.env.example`. Its published manifest lacks `service.composeSha256`, so release `v0.1.1` is required for the embedded-Compose integrity check. A running service and verified LAN URL remain pending.
 
 ## Deploy the named service
 
 1. Confirm the published product release and its immutable image digest.
-2. On the hosting Windows computer, run the portable setup assistant or use `host.bat` after Docker Engine and Compose are ready.
+2. On the hosting Windows computer, double-click the portable setup assistant or use `host.bat` after Docker Engine and Compose are ready. The assistant is a self-contained single file and does not need installation.
 3. Confirm the local container context and select an active private LAN IPv4 address, an unused HTTPS port, and a persistent data folder.
 4. Review the release tag and source revision before confirming setup.
 5. Wait for image pull, configuration validation, service start, HTTPS health, and the local LAN URL check.
 6. Verify the certificate fingerprint on each client before entering owner credentials.
 
-The assistant and `host.bat` operate on the named `watchdog-control` Compose project. The published service port binds only to the selected private LAN address. They do not change the host firewall, remove other Compose projects, prune images or volumes, or delete existing service data. The assistant generates local TLS and pairing files and can optionally install the Windows host agent with separate consent.
+The assistant and `host.bat` operate on the named `watchdog-control` Compose project. The assistant embeds `compose.yaml` in the portable executable and verifies its SHA-256 against the selected release manifest. Its welcome-screen **Host Watchdog Control on this computer** action starts the service with one click when a local engine, valid release, selected private LAN interface, usable port, and saved data location are ready. This quick path runs without installing the assistant, Docker Desktop, another runtime, the optional host agent, or other host prerequisites. It downloads the verified product image and writes this service's configuration and protected local files. The guided setup remains available for prerequisite installation and detailed recovery.
+
+Double-clicking `host.bat` presents a keyboard menu. If no choice is made within eight seconds, it starts or updates the service and returns after health checks. `host.bat --detached` starts and verifies in the background, `host.bat --logs` opens the interactive log view, and `host.bat --stop` is the separate explicit stop action.
 
 ## Automatic prerequisite setup and resume
 
@@ -31,4 +33,4 @@ A failed health check after service start leaves the service running for inspect
 
 ## Current verification
 
-The root product build is verified locally. No published image, release attachment, Compose pull, service health response, client-side LAN access, certificate import, or host-agent installation has been verified. Keep each as pending until its actual evidence exists.
+The existing immutable image was anonymously pulled during the earlier release workflow. The earlier `v0.1.0` verifier stopped on an incorrect expected environment-sample filename; release readback confirms `default.env.example` is present. Its manifest lacks `service.composeSha256`, and `v0.1.1` is not yet published. The latest assistant source has passed `build.bat`, but its updated single-file package and actual GUI hosting path have not yet been built or exercised. No Compose pull from the host, service health response, client-side LAN access, certificate import, or host-agent installation has been verified. Keep each as pending until its actual evidence exists.

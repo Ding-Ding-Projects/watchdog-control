@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>WatchdogControlSetup</AssemblyName>
     <RootNamespace>Watchdog.SetupWizard</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
@@ -30,5 +30,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MaterialDesignThemes" Version="5.3.2" />
+    <EmbeddedResource Include="..\..\compose.yaml" LogicalName="Watchdog.SetupWizard.compose.yaml" />
   </ItemGroup>
 </Project>

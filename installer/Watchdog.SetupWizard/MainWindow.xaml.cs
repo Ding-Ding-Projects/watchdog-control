@@ -55,6 +55,7 @@ public partial class MainWindow : Window
     private TextBlock? _reviewDetails;
     private Button? _installDockerButton;
     private Button? _startInstallButton;
+    private Button? _quickHostButton;
     private Button? _finishButton;
     private Button? _retryAgentButton;
     private CheckBox? _systemServiceConsent;
@@ -83,7 +84,7 @@ public partial class MainWindow : Window
         else if (!string.IsNullOrWhiteSpace(_state.StorageDirectory))
             _step = Math.Clamp(_state.LastStep, 0, StepCount - 1);
         RenderStep();
-        if (_step == 2)
+        if (_step is 0 or 2)
             await ProbeDockerAsync();
         await ProbeReleaseAsync();
         ApplyCompactWindowLayout();
@@ -168,9 +169,9 @@ public partial class MainWindow : Window
     {
         AddEyebrow("WATCHDOG CONTROL  /  SETUP");
         AddHeading("A clear path to a running service.");
-        AddBody("This assistant prepares the Watchdog Control container on the Docker host selected by your current Docker context. It downloads the configuration from the exact source revision named by the latest public release, pulls that release’s immutable image, starts only the Watchdog Control Compose project, then checks service health and the host’s LAN address.");
+        AddBody("This portable assistant prepares the Watchdog Control container on the local Docker host. It verifies its embedded Compose configuration against the latest public release manifest, pulls that release’s immutable image, starts only the Watchdog Control Compose project, then checks service health and the host’s LAN address.");
         AddCallout("Before setup", "This changes Docker resources on the active context. Check the destination below before continuing. Setup never removes unrelated containers or deletes existing service data.", "Info");
-        AddCallout("What this assistant will not do", "It will not accept an arbitrary command, replace an existing data folder, expose a secret in its logs, or restart this computer. Docker installation, if needed, is started only after you choose it and approve any native elevation prompt.", "ShieldCheck");
+        AddCallout("What this assistant will not do", "It will not accept an arbitrary command, replace an existing data folder, expose a secret in its logs, or restart this computer. Differing setup files are backed up and replaced only after confirmation. Docker installation, if needed, is started only after you choose it and approve any native elevation prompt.", "ShieldCheck");
         AddBody("The setup record stores your selected port, storage folder, release identity and last completed step in your local profile. It does not store the access credential.");
         if (_state.ProgressRecoveryWarning is { } recoveryWarning)
         {
@@ -185,6 +186,101 @@ public partial class MainWindow : Window
             PageHost.Children.Add(_progressRecoveryAcknowledgement);
         }
         AddReleaseStatus();
+        AddQuickHostControls();
+    }
+
+    private void AddQuickHostControls()
+    {
+        var card = NewCard();
+        var stack = (StackPanel)card.Child!;
+        stack.Children.Add(new TextBlock { Text = "Quick host", FontWeight = FontWeights.Bold, FontSize = 16 });
+        stack.Children.Add(new TextBlock
+        {
+            Text = "This assistant runs from one portable executable and needs no installation. With a ready local Docker Engine, one click downloads the verified Watchdog Control image, writes this service's configuration and protected local files, and starts only this service on the selected private LAN address and HTTPS port. Quick hosting does not install Docker Desktop, another runtime, the optional Windows host agent, or other host prerequisites.",
+            Foreground = (Brush)FindResource("TextSecondary"), FontSize = 13, LineHeight = 20, Margin = new Thickness(0, 8, 0, 12)
+        });
+
+        _quickHostButton = new Button { Content = "Host Watchdog Control on this computer", MinWidth = 280, HorizontalAlignment = HorizontalAlignment.Left };
+        AutomationProperties.SetName(_quickHostButton, "Host Watchdog Control on this computer with the selected local Docker Engine");
+        _quickHostButton.Click += QuickHost_Click;
+        var available = CanQuickHost(out var selectedLan, out var reason);
+        _quickHostButton.IsEnabled = available;
+        stack.Children.Add(_quickHostButton);
+
+        var destination = selectedLan is null
+            ? "LAN address: choose an active private interface in setup"
+            : $"Destination: https://{selectedLan.Address}:{_state.HostPort}/\nData folder: {_state.StorageDirectory}";
+        stack.Children.Add(new TextBlock
+        {
+            Text = destination,
+            FontFamily = new FontFamily("Consolas"), FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0)
+        });
+        if (!available)
+            stack.Children.Add(new TextBlock { Text = reason, Foreground = new SolidColorBrush(Color.FromRgb(153, 74, 28)), FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) });
+        PageHost.Children.Add(card);
+    }
+
+    private bool CanQuickHost(out LanInterfaceOption? selectedLan, out string reason)
+    {
+        selectedLan = null;
+        if (_state.ProgressRecoveryWarning is not null)
+        {
+            reason = "Review and preserve the unreadable setup progress before quick hosting.";
+            return false;
+        }
+        if (_state.RequiresStorageSelection)
+        {
+            reason = "Confirm the existing data folder in Host settings before quick hosting.";
+            return false;
+        }
+        if (_state.ManageThisComputer)
+        {
+            reason = "The optional host agent is selected. Review that separate installation in the full setup flow, or clear it before quick hosting.";
+            return false;
+        }
+        if (!_state.DockerReady)
+        {
+            reason = "Start the already-installed local Docker Engine first. Quick hosting never installs Docker.";
+            return false;
+        }
+        if (!_state.ManifestAvailable)
+        {
+            reason = "A verified normal release is not ready yet. Quick hosting waits for its immutable image manifest.";
+            return false;
+        }
+        var interfaces = GetPrivateLanInterfaces();
+        selectedLan = interfaces.FirstOrDefault(option => string.Equals(option.Address.ToString(), _state.LanBindAddress, StringComparison.Ordinal));
+        if (selectedLan is null && interfaces.Count == 1) selectedLan = interfaces[0];
+        if (selectedLan is null)
+        {
+            reason = interfaces.Count == 0
+                ? "Connect an active Ethernet or Wi-Fi interface with a private IPv4 address, then choose it in Host settings."
+                : "More than one private LAN interface is active. Choose the intended interface in Host settings.";
+            return false;
+        }
+        if (_state.HostPort is < 1024 or > 65535)
+        {
+            reason = "Choose a host port from 1024 to 65535 in Host settings.";
+            return false;
+        }
+        if (!_state.ServiceStarted && !ValidatePort(out reason)) return false;
+        reason = string.Empty;
+        return true;
+    }
+
+    private async void QuickHost_Click(object sender, RoutedEventArgs e)
+    {
+        if (_operationRunning) return;
+        if (!CanQuickHost(out var selectedLan, out var reason) || selectedLan is null)
+        {
+            SetStatus(reason, false);
+            RenderStep();
+            return;
+        }
+        _state.LanBindAddress = selectedLan.Address.ToString();
+        _state.StartConfirmed = true;
+        await SaveStateAsync();
+        await StartInstallAsync(allowDockerInstallation: false);
     }
 
     private void ShowHostSettingsPage()
@@ -308,7 +404,7 @@ public partial class MainWindow : Window
     {
         AddEyebrow("REVIEW");
         AddHeading("Check the destination before setup.");
-        AddBody("Start setup resolves supported missing prerequisites automatically, then downloads the Compose file from the release’s exact source revision, pulls the pinned image, writes the selected Compose setup, and runs `docker compose up -d` for one named project.");
+        AddBody("Start setup resolves supported missing prerequisites automatically, verifies the embedded Compose file against the release manifest, pulls the pinned image, writes the selected Compose setup, and runs `docker compose up -d` for one named project.");
         var card = NewCard();
         var stack = (StackPanel)card.Child!;
         _reviewDetails = new TextBlock { FontFamily = new FontFamily("Consolas"), FontSize = 13, LineHeight = 24 };
@@ -441,6 +537,7 @@ public partial class MainWindow : Window
         }
         await SaveStateAsync();
         RefreshReview();
+        if (_step == 0) RenderStep();
     }
 
     private async void InstallDocker_Click(object sender, RoutedEventArgs e)
@@ -520,10 +617,13 @@ public partial class MainWindow : Window
             throw new TimeoutException("Docker Desktop was installed, but its local engine did not become reachable within three minutes. Complete any first-run setup or required computer restart manually, then check again.");
     }
 
-    private async void StartInstall_Click(object sender, RoutedEventArgs e)
+    private async void StartInstall_Click(object sender, RoutedEventArgs e) => await StartInstallAsync(allowDockerInstallation: true);
+
+    private async Task StartInstallAsync(bool allowDockerInstallation)
     {
+        if (_operationRunning) return;
         if (!_state.StartConfirmed || !_state.ManifestAvailable || (_state.ManageThisComputer && !_state.SystemServiceConsent)) return;
-        var resuming = _state.LastStep >= StepCount - 1 && _state.LastOperationSummary is not null;
+        var resuming = _state.ServiceStarted || (_state.LastStep >= StepCount - 1 && _state.LastOperationSummary is not null);
         if (!resuming && !ValidatePort(out var portError)) { SetStatus(portError, false); _step = 1; RenderStep(); return; }
         _state.HostPort = ParsePort();
         _state.LastStep = 5;
@@ -540,6 +640,8 @@ public partial class MainWindow : Window
             await ProbeDockerAsync(duringOperation: true);
             if (!_state.DockerReady)
             {
+                if (!allowDockerInstallation)
+                    throw new InvalidOperationException("The local Docker Engine is no longer ready. Quick hosting did not install Docker or change another host prerequisite; start the existing engine and retry.");
                 Report("No reachable local Docker Engine is ready. Resolving the supported runtime prerequisite automatically.");
                 await InstallDockerDesktopAsync(_operationCancellation.Token);
             }
@@ -574,13 +676,12 @@ public partial class MainWindow : Window
         _state.LanBindAddress = bindAddress.ToString();
         await EnsureManifestAsync(cancellationToken);
         Report("Release manifest validated against the normal public release.");
-        var compose = await DownloadComposeAsync(cancellationToken);
-        Report("Compose file downloaded from source revision " + _state.SourceSha + ".");
+        var compose = await LoadBundledComposeAsync(cancellationToken);
+        Report("Bundled Compose file SHA-256 matches the selected release " + _state.ReleaseTag + ".");
+        var hostEntrypoints = await DownloadHostEntrypointsAsync(cancellationToken);
         Directory.CreateDirectory(_state.ComposeDirectory);
         Directory.CreateDirectory(_state.StorageDirectory);
         var composePath = Path.Combine(_state.ComposeDirectory, "compose.yaml");
-        await File.WriteAllTextAsync(composePath, compose, new UTF8Encoding(false), cancellationToken);
-        await DownloadHostEntrypointsAsync(cancellationToken);
         var secretDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ding-Ding-Projects", "WatchdogControlSetup", "secrets");
         CreateProtectedSecretDirectory(secretDirectory);
         _pairingCode = _state.PairingCodeShown ? string.Empty : File.Exists(Path.Combine(secretDirectory, "watchdog_pairing_code")) ? await File.ReadAllTextAsync(Path.Combine(secretDirectory, "watchdog_pairing_code"), cancellationToken) : CreatePairingCode();
@@ -610,7 +711,30 @@ public partial class MainWindow : Window
             ["WATCHDOG_TLS_PASSWORD_HOST_FILE"] = _certificatePasswordPath,
             ["WATCHDOG_AGENT_ENROLLMENT_CODE_HOST_FILE"] = _agentEnrollmentPath,
         };
-        await WriteHostEnvironmentAsync(environment, cancellationToken);
+        var setupFiles = new List<SetupFileContent>
+        {
+            new("compose.yaml", new UTF8Encoding(false).GetBytes(compose)),
+            new(".env", BuildHostEnvironmentFile(environment))
+        };
+        setupFiles.AddRange(hostEntrypoints);
+        var backupDirectory = await SetupFilePersistence.PersistAsync(
+            _state.ComposeDirectory,
+            setupFiles,
+            (paths, backupPath) => MessageBox.Show(
+                this,
+                "These existing setup files differ from the verified release:\n\n" +
+                string.Join(Environment.NewLine, paths.Select(path => "• " + path)) +
+                "\n\nByte-for-byte backups will be saved under:\n" + backupPath +
+                "\n\nContinue and replace only these listed setup files? The selected data folder and unrelated containers will not be changed.",
+                "Review existing setup files",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No) == MessageBoxResult.Yes,
+            cancellationToken);
+        if (backupDirectory is not null)
+            Report("Confirmed setup-file replacement completed. Verified backups are stored at " + backupDirectory + ".");
+        else
+            Report("Verified setup files were created or exact matches were reused. No differing local file was replaced.");
         var baseArgs = new List<string> { "compose", "-p", "watchdog-control", "-f", composePath };
         Report("Validating the rendered Compose configuration before pulling the image.");
         var config = await RunDockerAsync([.. baseArgs, "config", "--quiet"], environment, cancellationToken);
@@ -886,6 +1010,7 @@ public partial class MainWindow : Window
         var image = ReadString(imageNode, "reference");
         var archive = ReadString(imageNode, "archiveAsset");
         var archiveHash = ReadString(imageNode, "archiveSha256");
+        var composeHash = ReadString(serviceNode, "composeSha256");
         var serviceName = ReadString(serviceNode, "name");
         var port = ReadInt(serviceNode, "containerPort");
         var healthPath = ReadString(serviceNode, "healthPath");
@@ -899,12 +1024,14 @@ public partial class MainWindow : Window
         await VerifyReleaseSourceShaAsync(tag, sourceSha, cancellationToken);
         if (!Regex.IsMatch(image, "^" + Regex.Escape(ImagePrefix) + "[0-9a-f]{64}$", RegexOptions.CultureInvariant)) throw new InvalidDataException("The release manifest does not contain the required immutable image digest.");
         if (archive != "watchdog-control-image-linux-amd64.tar" || !Regex.IsMatch(archiveHash, "^[0-9a-f]{64}$", RegexOptions.CultureInvariant)) throw new InvalidDataException("The release image archive name or SHA-256 is invalid.");
+        if (!Regex.IsMatch(composeHash, "^[0-9a-f]{64}$", RegexOptions.CultureInvariant)) throw new InvalidDataException("The release manifest does not contain a valid Compose SHA-256.");
         if (serviceName != "watchdog" || port != 8443 || healthPath != "/health" || dataPath != "/var/lib/watchdog-control") throw new InvalidDataException("The manifest service contract does not match this setup wizard.");
         if (tlsCertPath != "/run/secrets/watchdog_tls_certificate" || tlsPasswordPath != "/run/secrets/watchdog_tls_password" || pairingCodePath != "/run/secrets/watchdog_pairing_code") throw new InvalidDataException("The manifest protected secret paths do not match this setup wizard.");
         if (agentEnrollmentPath != "/run/secrets/watchdog_agent_enrollment_code") throw new InvalidDataException("The manifest host-agent enrollment secret path does not match this setup wizard.");
         _state.ReleaseTag = tag;
         _state.SourceSha = sourceSha;
         _state.ImageReference = image;
+        _state.ComposeSha256 = composeHash;
         _state.ManifestAvailable = true;
         _state.ManifestUnavailableReason = null;
         await SaveStateAsync();
@@ -932,13 +1059,16 @@ public partial class MainWindow : Window
             throw new InvalidDataException("The release tag target does not match the manifest source commit.");
     }
 
-    private async Task<string> DownloadComposeAsync(CancellationToken cancellationToken)
+    private async Task<string> LoadBundledComposeAsync(CancellationToken cancellationToken)
     {
-        var uri = new Uri($"https://raw.githubusercontent.com/{OwnerRepository}/{_state.SourceSha}/compose.yaml");
-        using var response = await Http.GetAsync(uri, cancellationToken);
-        response.EnsureSuccessStatusCode();
-        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        await using var source = Assembly.GetExecutingAssembly().GetManifestResourceStream("Watchdog.SetupWizard.compose.yaml")
+            ?? throw new InvalidDataException("The portable setup assistant does not contain its bundled Compose configuration.");
+        if (source.Length is 0 or > 64 * 1024) throw new InvalidDataException("The bundled Compose file is empty or exceeds 64 KiB.");
+        var bytes = new byte[checked((int)source.Length)];
+        await source.ReadExactlyAsync(bytes, cancellationToken);
         if (bytes.Length is 0 or > 64 * 1024) throw new InvalidDataException("The release Compose file is empty or exceeds 64 KiB.");
+        var digest = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        if (!string.Equals(digest, _state.ComposeSha256, StringComparison.Ordinal)) throw new InvalidDataException("The bundled Compose file does not match the Compose SHA-256 in the selected release manifest. Use the setup assistant packaged with that release.");
         var text = new UTF8Encoding(false, true).GetString(bytes);
         if (!text.Contains("watchdog:", StringComparison.Ordinal) ||
             !text.Contains("${WATCHDOG_IMAGE", StringComparison.Ordinal) ||
@@ -961,26 +1091,28 @@ public partial class MainWindow : Window
         return text;
     }
 
-    private async Task DownloadHostEntrypointsAsync(CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<SetupFileContent>> DownloadHostEntrypointsAsync(CancellationToken cancellationToken)
     {
         var root = new Uri($"https://raw.githubusercontent.com/{OwnerRepository}/{_state.SourceSha}/");
-        await DownloadPinnedFileAsync(new Uri(root, "host.bat"), Path.Combine(_state.ComposeDirectory, "host.bat"), 16 * 1024, cancellationToken);
-        var scriptsDirectory = Path.Combine(_state.ComposeDirectory, "scripts");
-        Directory.CreateDirectory(scriptsDirectory);
-        await DownloadPinnedFileAsync(new Uri(root, "scripts/host.ps1"), Path.Combine(scriptsDirectory, "host.ps1"), 96 * 1024, cancellationToken);
+        var hostBatch = await DownloadPinnedFileAsync(new Uri(root, "host.bat"), 16 * 1024, cancellationToken);
+        var hostScript = await DownloadPinnedFileAsync(new Uri(root, "scripts/host.ps1"), 96 * 1024, cancellationToken);
+        return new[]
+        {
+            new SetupFileContent("host.bat", hostBatch),
+            new SetupFileContent(Path.Combine("scripts", "host.ps1"), hostScript)
+        };
     }
 
-    private static async Task DownloadPinnedFileAsync(Uri address, string destination, int maximumBytes, CancellationToken cancellationToken)
+    private static async Task<byte[]> DownloadPinnedFileAsync(Uri address, int maximumBytes, CancellationToken cancellationToken)
     {
         using var response = await Http.GetAsync(address, cancellationToken);
         response.EnsureSuccessStatusCode();
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-        if (bytes.Length is 0 || bytes.Length > maximumBytes) throw new InvalidDataException($"The pinned host-control file {Path.GetFileName(destination)} is empty or exceeds its accepted size.");
-        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-        await File.WriteAllBytesAsync(destination, bytes, cancellationToken);
+        if (bytes.Length is 0 || bytes.Length > maximumBytes) throw new InvalidDataException("A pinned host-control file is empty or exceeds its accepted size.");
+        return bytes;
     }
 
-    private async Task WriteHostEnvironmentAsync(IReadOnlyDictionary<string, string?> values, CancellationToken cancellationToken)
+    private byte[] BuildHostEnvironmentFile(IReadOnlyDictionary<string, string?> values)
     {
         var names = new[]
         {
@@ -999,7 +1131,7 @@ public partial class MainWindow : Window
             var normalized = value.Replace('\\', '/').Replace("$", "$$", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
             lines.Add($"{name}=\"{normalized}\"");
         }
-        await File.WriteAllLinesAsync(Path.Combine(_state.ComposeDirectory, ".env"), lines, new UTF8Encoding(false), cancellationToken);
+        return new UTF8Encoding(false).GetBytes(string.Join(Environment.NewLine, lines) + Environment.NewLine);
     }
 
     private async Task WaitForHealthAsync(CancellationToken cancellationToken)
@@ -1510,7 +1642,7 @@ public partial class MainWindow : Window
     private static HttpClient CreateHttpClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("WatchdogControlSetup/0.1.0");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("WatchdogControlSetup/0.1.1");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
     }
@@ -1605,6 +1737,7 @@ internal sealed class SetupState
     public string? ReleaseTag { get; set; }
     public string? SourceSha { get; set; }
     public string? ImageReference { get; set; }
+    public string? ComposeSha256 { get; set; }
     public bool ServiceStarted { get; set; }
     public bool InstallationVerified { get; set; }
     public bool PairingCodeShown { get; set; }

@@ -11,7 +11,8 @@ echo   [D] Start or update the service and return after health checks
 echo   [L] Open the live log and status view
 echo   [S] Stop the Watchdog Control service
 echo   [Q] Exit without changing the service
-choice /c DLSQ /n /m "Choose D, L, S, or Q: "
+echo No selection in 8 seconds starts or updates the service.
+choice /c DLSQ /t 8 /d D /n /m "Choose D, L, S, or Q: "
 if errorlevel 4 goto :exit_menu
 if errorlevel 3 goto :select_stop
 if errorlevel 2 goto :select_logs
