@@ -1073,7 +1073,7 @@ public partial class MainWindow : Window
             !text.Contains("${WATCHDOG_IMAGE", StringComparison.Ordinal) ||
             !text.Contains("WATCHDOG_HOST_PORT", StringComparison.Ordinal) ||
             !text.Contains("WATCHDOG_HOST_BIND_IP", StringComparison.Ordinal) ||
-            !text.Contains(":8443", StringComparison.Ordinal) ||
+            !Regex.IsMatch(text, @"(?m)^\s*-\s*target\s*:\s*8443\s*$", RegexOptions.CultureInvariant) ||
             !text.Contains("WATCHDOG_DATA_PATH", StringComparison.Ordinal) ||
             !text.Contains("WATCHDOG_PAIRING_CODE_FILE", StringComparison.Ordinal) ||
             !text.Contains("WATCHDOG_TLS_CERTIFICATE_FILE", StringComparison.Ordinal) ||
