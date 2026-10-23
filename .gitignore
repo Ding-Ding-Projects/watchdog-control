@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+*.pfx
+*.key
+*.pem
+/data/
+/secrets/
+/state/
+/build/
+/dist/
+/artifacts/
+/node_modules/
+/.tools/
+.DS_Store
+Thumbs.db
