@@ -96,6 +96,7 @@ public partial class MainWindow : Window
         try
         {
             await EnsureManifestAsync(CancellationToken.None);
+            await LoadBundledComposeAsync(CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -169,6 +170,7 @@ public partial class MainWindow : Window
     {
         AddEyebrow("WATCHDOG CONTROL  /  SETUP");
         AddHeading("A clear path to a running service.");
+        AddQuickHostControls();
         AddBody("This portable assistant prepares the Watchdog Control container on the local Docker host. It verifies its embedded Compose configuration against the latest public release manifest, pulls that release’s immutable image, starts only the Watchdog Control Compose project, then checks service health and the host’s LAN address.");
         AddCallout("Before setup", "This changes Docker resources on the active context. Check the destination below before continuing. Setup never removes unrelated containers or deletes existing service data.", "Info");
         AddCallout("What this assistant will not do", "It will not accept an arbitrary command, replace an existing data folder, expose a secret in its logs, or restart this computer. Differing setup files are backed up and replaced only after confirmation. Docker installation, if needed, is started only after you choose it and approve any native elevation prompt.", "ShieldCheck");
@@ -186,7 +188,6 @@ public partial class MainWindow : Window
             PageHost.Children.Add(_progressRecoveryAcknowledgement);
         }
         AddReleaseStatus();
-        AddQuickHostControls();
     }
 
     private void AddQuickHostControls()
@@ -196,7 +197,7 @@ public partial class MainWindow : Window
         stack.Children.Add(new TextBlock { Text = "Quick host", FontWeight = FontWeights.Bold, FontSize = 16 });
         stack.Children.Add(new TextBlock
         {
-            Text = "This assistant runs from one portable executable and needs no installation. With a ready local Docker Engine, one click downloads the verified Watchdog Control image, writes this service's configuration and protected local files, and starts only this service on the selected private LAN address and HTTPS port. Quick hosting does not install Docker Desktop, another runtime, the optional Windows host agent, or other host prerequisites.",
+            Text = "Open this single portable executable directly. The assistant and its Compose configuration need no installation. With an already-ready local Docker Engine, one click verifies and downloads the Watchdog Control image, writes this service's configuration and protected local files, and starts only this service on the selected private LAN address and HTTPS port. Quick hosting does not install Docker Desktop, another runtime, the optional Windows host agent, or other host prerequisites.",
             Foreground = (Brush)FindResource("TextSecondary"), FontSize = 13, LineHeight = 20, Margin = new Thickness(0, 8, 0, 12)
         });
 
@@ -208,8 +209,8 @@ public partial class MainWindow : Window
         stack.Children.Add(_quickHostButton);
 
         var destination = selectedLan is null
-            ? "LAN address: choose an active private interface in setup"
-            : $"Destination: https://{selectedLan.Address}:{_state.HostPort}/\nData folder: {_state.StorageDirectory}";
+            ? "Destination: choose an active private LAN interface in Host settings"
+            : $"Destination: selected private LAN interface · HTTPS port {_state.HostPort}";
         stack.Children.Add(new TextBlock
         {
             Text = destination,
@@ -249,8 +250,7 @@ public partial class MainWindow : Window
             return false;
         }
         var interfaces = GetPrivateLanInterfaces();
-        selectedLan = interfaces.FirstOrDefault(option => string.Equals(option.Address.ToString(), _state.LanBindAddress, StringComparison.Ordinal));
-        if (selectedLan is null && interfaces.Count == 1) selectedLan = interfaces[0];
+        selectedLan = ResolveLanSelection(interfaces, _state.LanBindAddress);
         if (selectedLan is null)
         {
             reason = interfaces.Count == 0
@@ -299,8 +299,7 @@ public partial class MainWindow : Window
             ToolTip = "Choose the Ethernet or Wi-Fi interface that should reach the service"
         };
         AutomationProperties.SetName(_lanBindBox, "Private LAN interface and IPv4 address");
-        var selectedLan = lanOptions.FirstOrDefault(option => string.Equals(option.Address.ToString(), _state.LanBindAddress, StringComparison.Ordinal));
-        if (selectedLan is null && lanOptions.Count == 1) selectedLan = lanOptions[0];
+        var selectedLan = ResolveLanSelection(lanOptions, _state.LanBindAddress);
         _lanBindBox.SelectedItem = selectedLan;
         var selectedAddress = selectedLan?.Address.ToString();
         if (!string.Equals(_state.LanBindAddress, selectedAddress, StringComparison.Ordinal))
@@ -1566,8 +1565,10 @@ public partial class MainWindow : Window
                 {
                     try
                     {
-                        return network.GetIPProperties().UnicastAddresses
-                            .Select(unicast => new LanInterfaceOption(network.Name, unicast.Address));
+                        var properties = network.GetIPProperties();
+                        var hasPrivateGateway = properties.GatewayAddresses.Any(gateway => IsPrivateLanAddress(gateway.Address));
+                        return properties.UnicastAddresses
+                            .Select(unicast => new LanInterfaceOption(network.Name, unicast.Address, hasPrivateGateway));
                     }
                     catch (NetworkInformationException)
                     {
@@ -1584,6 +1585,17 @@ public partial class MainWindow : Window
         {
             return Array.Empty<LanInterfaceOption>();
         }
+    }
+
+    private static LanInterfaceOption? ResolveLanSelection(IReadOnlyList<LanInterfaceOption> interfaces, string? savedAddress)
+    {
+        var savedSelection = interfaces.FirstOrDefault(option => string.Equals(option.Address.ToString(), savedAddress, StringComparison.Ordinal));
+        if (savedSelection is not null) return savedSelection;
+
+        var privateGatewayOptions = interfaces.Where(option => option.HasPrivateGateway).ToArray();
+        if (privateGatewayOptions.Length == 1) return privateGatewayOptions[0];
+        if (privateGatewayOptions.Length == 0 && interfaces.Count == 1) return interfaces[0];
+        return null;
     }
 
     private static bool IsPrivateLanAddress(IPAddress address)
@@ -1714,9 +1726,9 @@ public partial class MainWindow : Window
 
     private sealed record StepIndicator(Border Dot, TextBlock Title);
 
-    private sealed record LanInterfaceOption(string Name, IPAddress Address)
+    private sealed record LanInterfaceOption(string Name, IPAddress Address, bool HasPrivateGateway)
     {
-        public string DisplayName => $"{Name} | {Address}";
+        public string DisplayName => HasPrivateGateway ? $"{Name} | {Address} | private gateway" : $"{Name} | {Address}";
     }
 }
 
