@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0.402 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.402@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2 AS build
 WORKDIR /src
 COPY global.json ./
 COPY src/Watchdog.Contracts/ src/Watchdog.Contracts/
@@ -6,7 +6,7 @@ COPY src/Watchdog.Web/ src/Watchdog.Web/
 RUN dotnet restore src/Watchdog.Web/Watchdog.Web.csproj --locked-mode
 RUN dotnet publish src/Watchdog.Web/Watchdog.Web.csproj -c Release --no-restore -o /out
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.13-bookworm-slim AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.13-noble@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS runtime
 WORKDIR /app
 ARG VERSION=0.1.0
 ARG VCS_REF=unknown

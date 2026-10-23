@@ -62,6 +62,8 @@ jobs:
       - name: Read pinned trusted scanner
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          repository: Ding-Ding-Projects/agent-global-memory
+          token: ${{ secrets.RELEASE_TOKEN || secrets.ORG_TOKEN || secrets.GITHUB_TOKEN }}
           ref: ${{ vars.PUBLICATION_SCAN_POLICY_SHA }}
           path: trusted-policy
           persist-credentials: false
