@@ -1083,7 +1083,8 @@ public partial class MainWindow : Window
             !text.Contains("/run/secrets/watchdog_tls_certificate", StringComparison.Ordinal) ||
             !text.Contains("/run/secrets/watchdog_tls_password", StringComparison.Ordinal) ||
             !text.Contains("/run/secrets/watchdog_agent_enrollment_code", StringComparison.Ordinal) ||
-            !text.Contains("/health", StringComparison.Ordinal))
+            !text.Contains("healthcheck:", StringComparison.Ordinal) ||
+            !text.Contains("--healthcheck", StringComparison.Ordinal))
             throw new InvalidDataException("The source-pinned Compose file is missing the required watchdog service, digest, port, data, or health configuration.");
         if (text.Contains("container_name:", StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("The release Compose file sets a global container name and cannot be used safely beside other projects.");
