@@ -34,6 +34,10 @@ Double-clicking `host.bat` opens a keyboard menu. If no choice is made within ei
 
 Current built-interface screenshots will be added after the revised setup assistant is packaged and its real interface is inspected. Earlier blank captures remain historical evidence and are not presented as current UI proof.
 
+## Local publication checks
+
+Configure the repository-local hooks with `git config --local core.hooksPath .githooks`. The pre-commit hook scans staged content; the pre-push hook scans outgoing revisions against the selected GitHub remote. They use a locally installed publication policy when available. If that policy source is present but the trusted runner cannot start, the operation stops. Clones without the private policy source skip this owner-specific scan; the hosted publication-language workflow remains the shared enforcement route.
+
 ## Navigation
 
 - [Roadmap](ROADMAP.md)
