@@ -1,0 +1,37 @@
+name: Deploy documentation
+
+on:
+  push:
+    branches:
+      - ai/docs/20261023-public-documentation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out selected source
+        uses: actions/checkout@v4
+      - name: Prepare static documentation
+        run: test -f docs/index.html && test -f docs/assets/site.js && test -f docs/assets/content.js
+      - name: Upload Pages content
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5.0.1

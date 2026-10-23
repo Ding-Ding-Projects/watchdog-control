@@ -1,5 +1,7 @@
 # Watchdog Control
 
+[Documentation site](https://ding-ding-projects.github.io/watchdog-control/)
+
 | Overview | Security | Operations | Documentation |
 | --- | --- | --- | --- |
 | [Purpose](#purpose) | [Security model](docs/security/README.md) | [Run locally](docs/operations/README.md) | [documentation website source](docs/README.md) |
