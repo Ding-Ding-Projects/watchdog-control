@@ -54,7 +54,7 @@ window.WATCHDOG_DOCS={
     ['design-parity','Checked-in design parity','Incomplete','Design handoff is included in this lane; built and deployed parity evidence is pending.'],
     ['live-status','Live Status Hub','Blocked','No Status Hub connector is exposed to this lane. The public page does not simulate a live status feed.'],
     ['wiki-publication','GitHub wiki publication','Blocked','The wiki API returned 404 and the wiki Git endpoint reported the repository missing. Source content is prepared locally.'],
-    ['pages-deployment','GitHub Pages deployment','Blocked','Pages is not configured for this public repository. Deployment requires the Pages workflow and a successfully completed deployment run.'],
+    ['pages-deployment','GitHub Pages deployment','Blocked','Pages is configured for this repository at https://ding-ding-projects.github.io/watchdog-control/, but GitHub currently reports no registered workflows and manual dispatch returns 404. The live URL returns 404 until workflow registration and deployment succeed.'],
     ['homepage-link','About homepage URL','Blocked','The stored homepage field is empty. It can be set after a deployed home URL is verified.'],
     ['product-settings','Product settings coverage','Incomplete','Only documentation preferences are exposed here; the product has no verified build or settings surface yet.'],
     ['complete-feature-inventory','Complete site feature inventory','Incomplete','This site-specific matrix records known surfaces, but the full 110-entry feature contract catalogue has not been mapped entry by entry.'],
