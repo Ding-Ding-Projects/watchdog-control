@@ -1,6 +1,9 @@
 name: Deploy documentation
 
 on:
+  push:
+    branches:
+      - ai/docs/20261023-public-documentation
   workflow_dispatch:
 
 permissions:
