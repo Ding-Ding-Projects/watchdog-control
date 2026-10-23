@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "dotnetSdk": {
+    "version": "10.0.402",
+    "rid": "win-x64",
+    "archiveUrl": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.402/dotnet-sdk-10.0.402-win-x64.zip",
+    "sha512": "ae4fd528cb7e9f6af6aaf7de36715a69f761f183744f1bb3025d19f5a92447090ec561410e46266c1d10a63781ed6f3de771760bc76c876d87daabc367b898cd",
+    "metadataUrl": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/10.0/releases.json"
+  },
+  "node": {
+    "version": "24.22.1",
+    "rid": "win-x64",
+    "archiveUrl": "https://nodejs.org/dist/v24.22.1/node-v24.22.1-win-x64.zip",
+    "sha256": "d2046d28c2c3dcd211ac5145c0bf30e2047ef9dfb306693c8c6e2eccd8b95fa5"
+  },
+  "githubCli": {
+    "version": "2.103.0",
+    "linuxX64Archive": "https://github.com/cli/cli/releases/download/v2.103.0/gh_2.103.0_linux_amd64.tar.gz",
+    "linuxX64Sha256": "fdd768eb70f6409f80fcfa9f3a1c0adf0fc98d827ab3ce0bed2ac22762c5d786"
+  }
+}

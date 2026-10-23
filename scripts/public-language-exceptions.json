@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "path": "scripts/public-language-scan.mjs",
+      "line": 534,
+      "sha256": "031c99ee1f5b85facd3e646d21952575158584b51ab532f74bae3804ae957667",
+      "reason": "technical-identifier"
+    },
+    {
+      "path": "scripts/public-language-scan.mjs",
+      "line": 580,
+      "sha256": "992960cad7d52225118e6729eeb43c97008e1b5ca6c4379b0192b8730a5de72a",
+      "reason": "technical-identifier"
+    },
+    {
+      "path": "scripts/run-publication-language-ci.mjs",
+      "line": 40,
+      "sha256": "474c92f0d0b722d8e2dd16ea307a6bb057d26a81e1897ad6e912d00e88b682ab",
+      "reason": "technical-identifier"
+    }
+  ]
+}

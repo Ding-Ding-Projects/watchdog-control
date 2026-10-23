@@ -1,6 +1,6 @@
 # Feature workflows
 
-Every product workflow in this catalogue is **Planned** until a release and runtime check confirm it. This repository currently has no verified runnable product build. A guide describes the intended boundary; it is not a control or a release claim.
+The product source contains the dashboard, authenticated API, host agent, fixed operation catalog, and tailored WPF setup assistant. The exact root `build.bat` completed on 2026-10-23 with 0 warnings and 0 errors. The exact `build-installer.bat` package run remains pending. Local builds do not prove a release, installed service, remote LAN access, or a host operation.
 
 ## Host information
 
@@ -16,21 +16,33 @@ Every product workflow in this catalogue is **Planned** until a release and runt
 - [Restart and shutdown](power-actions.md)
 - [Authentication, pairing, and audit](identity-audit.md)
 - [Deployment and recovery](deployment-recovery.md)
+- [Automatic setup assistant](setup-assistant.md)
 
 ## Feature status
 
-| Workflow | State | Evidence |
+| Workflow | Source state | Current evidence |
 | --- | --- | --- |
-| Host health | Planned | No product build or host data source is verified. |
-| Services and processes | Planned | No bounded operation API or client view is verified. |
-| Event logs | Planned | No endpoint, query limits, or redaction path is verified. |
-| Storage and networking | Planned | No host collection or client rendering is verified. |
-| Updates and firewall | Planned | No status source or mutation workflow is verified. |
-| Typed operation catalog | Planned | API operation identifiers and schemas are not yet defined. |
-| Restart and shutdown | Planned | Confirmation, authorization, audit, and runtime result flow are not implemented. |
-| Authentication, pairing, and audit | Planned | Pairing, credentials, revocation, and audit storage are not implemented. |
-| Deployment and recovery | Blocked | No published immutable image, host setup entrypoint, or runtime health proof is available. |
+| Host health | Implemented in source | Root build succeeded; live host collection remains unverified. |
+| Services and processes | Implemented in source | Typed views and host-agent paths exist; runtime actions remain unverified. |
+| Event logs | Implemented in source | Bounded collection and dashboard records exist; runtime query remains unverified. |
+| Storage and networking | Implemented in source | Host records and views exist; LAN installation and live values remain unverified. |
+| Updates and firewall | Read-only source workflow | Status is collected and shown; remote mutation is intentionally unavailable. |
+| Typed operation catalog | Implemented in source | Server validates fixed identifiers and target records; runtime enforcement remains unverified. |
+| Restart and shutdown | Implemented in source | The API issues a short-lived challenge and exact confirmation; no host power operation was run during this work. |
+| Authentication, pairing, and audit | Implemented in source | Pairing, sessions, revocation, and audit records exist; installed security behavior remains unverified. |
+| Deployment and recovery | Implemented in source | Compose, host entrypoint, health flow, and setup source exist; public image and LAN runtime are pending. |
+| Automatic setup assistant | Tailored WPF source present; package verification pending | Root build passed with 0 warnings and 0 errors; package entrypoint, native installation, and restart-resume flow have not been exercised. |
+| Controller HTTP API | Implemented in source | The complete Postman category/master collections cover 17 routes; no live request has been exercised. |
 
 ## HTTP API materials
 
-There is no implemented HTTP API or published schema yet. Postman collections are not applicable until actual endpoints exist; inventing example routes would mislead readers. Add a category collection and a master collection once the API contract is defined.
+The project has an HTTP API. Its routes are defined in `src/Watchdog.Web/Program.cs`, with request and response records in `src/Watchdog.Web/Contracts.cs`. The [API category guide and collection](../api/README.md) document authentication, pairing, host-agent enrollment, typed operations, and power confirmation. The master collection is [available for import](../../postman/watchdog-control.postman_collection.json). Do not use an example collection as runtime proof.
+
+## Product acceptance still open
+
+- The public release and downloadable setup assistant are not yet verified.
+- The public container image has not been published or pulled through the tracked Compose file.
+- A remote container-hosted web app, health check, and LAN URL have not been verified.
+- The real built dashboard and wizard have not been driven on the supported Windows host, and no current screenshots are available.
+- The documentation site still has incomplete settings coverage and does not meet full RegexBuddy parity.
+- Power, service, and process operations have not been exercised against a disposable or remote host.

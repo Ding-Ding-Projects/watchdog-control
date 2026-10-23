@@ -7,6 +7,7 @@ This prepared wiki is complete as a local source set and is rendered directly in
 - [Project overview](overview.md)
 - [System architecture](architecture.md)
 - [Security and identity](security.md)
+- [Controller HTTP API](api-reference.md)
 
 ## Host workflows
 
@@ -21,6 +22,7 @@ This prepared wiki is complete as a local source set and is rendered directly in
 - [Typed operation catalog](operation-catalog.md)
 - [Restart and shutdown](power-actions.md)
 - [Deployment and recovery](deployment-recovery.md)
+- [Automatic setup assistant](setup-assistant.md)
 
 ## Internal routes
 
@@ -29,7 +31,7 @@ Every chapter is included in the site's built-in wiki reader with a chapter menu
 ## Publication record
 
 - Intended wiki: `Ding-Ding-Projects/watchdog-control.wiki`
-- Page inventory: the eleven linked Markdown files in this folder, plus this index
+- Page inventory: the thirteen linked Markdown files in this folder, plus this index
 - Source: project documentation prepared with the `watchdog-control` source tree
 - Publication state: pending; the wiki repository has not been created or exposed by GitHub
 - Readback state: unavailable until the wiki endpoint exists

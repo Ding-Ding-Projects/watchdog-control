@@ -1,18 +1,19 @@
 # Watchdog Control documentation
 
-Watchdog Control is planned as a LAN-scoped host management dashboard. Its public documentation is a task-led guide to the intended operating workflows, security boundaries, and current delivery state. The documentation site is separate from the product and cannot perform host operations.
+Watchdog Control is a LAN-scoped management dashboard with an authenticated API and a Windows host agent. Its source now includes operational workflows and a tailored setup assistant. The exact root build succeeded locally on 2026-10-23; no release or installed runtime has been verified.
 
 ## Start with a task
 
-- [Assess host health](features/host-health.md) to understand the planned read-only overview.
-- [Inspect a service or process](features/services-processes.md) to review the intended bounded controls.
-- [Review an interrupted operation](operations/README.md#recovery) before retrying anything with an uncertain outcome.
+- [Assess host health](features/host-health.md) and review observation freshness.
+- [Inspect a service or process](features/services-processes.md) through the fixed operation catalog.
+- [Install or resume setup](features/setup-assistant.md) on a local Windows computer.
+- [Recover after an interrupted operation](operations/README.md#recovery) without assuming its outcome.
 - [Check the security model](security/README.md) before pairing or exposing a host.
-- [Browse the complete documentation](index.html) with search, guided examples, settings, and wiki chapters.
+- [Browse the interactive guide](index.html) for guided workflows, search, article navigation, and complete local wiki content.
 
-## Delivery status
+## Delivery state
 
-Product implementation, published container, and runtime acceptance remain pending. Every product workflow below is marked Planned unless a later release provides verifiable evidence. The examples on the site are demonstrations of documentation behavior only. They do not connect to a host or execute the product.
+Product source and a local build are available. The public image, normal release files, deployment to a real host, client-side LAN reachability, and installed management behavior remain pending. The site demonstrations only update visitor-owned page state; they do not connect to or control a Windows host.
 
 ## Articles
 
@@ -20,8 +21,11 @@ Product implementation, published container, and runtime acceptance remain pendi
 - [Security](security/README.md)
 - [Operations and recovery](operations/README.md)
 - [Feature catalogue](features/README.md)
+- [Automatic setup assistant](features/setup-assistant.md)
+- [Controller HTTP API](features/http-api.md)
+- [HTTP API request collection](api/README.md)
 - [Wiki chapters](wiki/README.md)
 
 ## Wiki content
 
-Complete wiki chapters are maintained in `wiki/` and are also rendered inside the site. GitHub wiki publication is separate and remains pending until the wiki repository is available and its stored pages can be read back.
+Complete wiki chapters are maintained in `wiki/` and rendered directly inside the interactive guide with working internal routes. GitHub wiki publication is separate and remains pending until the wiki repository is available, its stored pages are published, and the links are read back.

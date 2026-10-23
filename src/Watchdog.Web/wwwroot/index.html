@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#11151b">
+  <title>Watchdog Control</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="app" aria-live="off"></div>
+  <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <dialog id="dialog" aria-labelledby="dialog-title">
+    <form method="dialog">
+      <button class="icon-button dialog-close" value="cancel" aria-label="Close dialog">×</button>
+    </form>
+    <div id="dialog-content"></div>
+  </dialog>
+</body>
+</html>

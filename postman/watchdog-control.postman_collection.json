@@ -1,0 +1,280 @@
+{
+  "info": {
+    "_postman_id": "6b6d0c0c-24b4-4fa1-8fa2-58188d2fe403",
+    "name": "Watchdog Control API",
+    "description": "Master collection for the Watchdog Control controller API. Requests are source-bound examples only. Trust the setup assistant's verified HTTPS certificate before entering credentials. Owner authentication uses Postman cookies; agent authentication uses bearer tokens. Keep all credential variables in a local private environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health and first owner",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "Returns {\"status\":\"ready\"} when the controller responds. This is an endpoint probe, not host-agent health."
+          }
+        },
+        {
+          "name": "Read pairing status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/setup/status",
+            "description": "Returns whether first-owner pairing is still required."
+          }
+        },
+        {
+          "name": "Create the first owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{ownerPairingCode}}\",\n  \"username\": \"{{ownerUsername}}\",\n  \"password\": \"{{ownerPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/setup/pair",
+            "description": "One-time operation. Requires HTTPS, pairingRequired=true, and the code from the assistant. The response sets the HttpOnly owner session cookie. Do not reuse or publish the pairing code."
+          }
+        },
+        {
+          "name": "Sign in",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{ownerUsername}}\",\n  \"password\": \"{{ownerPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/session",
+            "description": "Requires HTTPS outside development. A successful response sets the owner session cookie. Pairing and sign-in are rate-limited."
+          }
+        },
+        {
+          "name": "Read current session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/session",
+            "description": "Uses the owner session cookie in Postman's cookie jar."
+          }
+        },
+        {
+          "name": "Sign out",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Origin", "value": "{{baseUrl}}" }
+            ],
+            "url": "{{baseUrl}}/api/session",
+            "description": "Revokes the current owner session and deletes the cookie."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Owner dashboard and agents",
+      "item": [
+        {
+          "name": "Read dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/dashboard",
+            "description": "Returns non-revoked host views, up to 100 recent operations, and up to 500 audit records. Inspect host online state and lastSeenAt; this endpoint does not contact each agent synchronously."
+          }
+        },
+        {
+          "name": "Create host-agent invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"{{agentDisplayName}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/agents/invitations",
+            "description": "Returns a single-use enrollment code that expires after ten minutes. Store it only in a local private environment and deliver it through the intended trusted setup path."
+          }
+        },
+        {
+          "name": "Revoke host agent",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Origin", "value": "{{baseUrl}}" }
+            ],
+            "url": "{{baseUrl}}/api/agents/{{agentId}}",
+            "description": "Revokes the selected enrolled agent. Subsequent bearer requests are rejected."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Host-agent protocol",
+      "item": [
+        {
+          "name": "Enroll agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{agentInvitationCode}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agentId\": \"{{agentId}}\",\n  \"displayName\": \"{{agentDisplayName}}\",\n  \"platform\": \"Windows\",\n  \"agentVersion\": \"{{agentVersion}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/agent/enroll",
+            "description": "Redeems a one-time owner invitation or the one-time bootstrap enrollment code. The response returns an agent bearer token once. Save it only in the local private environment. Prefer the product agent for real enrollment and heartbeat traffic."
+          }
+        },
+        {
+          "name": "Send host heartbeat",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{agentToken}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agentId\": \"{{agentId}}\",\n  \"displayName\": \"{{agentDisplayName}}\",\n  \"platform\": \"Windows\",\n  \"hostname\": \"{{hostName}}\",\n  \"operatingSystem\": \"Windows\",\n  \"agentVersion\": \"{{agentVersion}}\",\n  \"collectedAt\": \"{{collectedAt}}\",\n  \"uptimeSeconds\": 0,\n  \"cpuPercent\": null,\n  \"memoryUsedBytes\": null,\n  \"memoryTotalBytes\": null,\n  \"services\": [],\n  \"processes\": [],\n  \"volumes\": [],\n  \"networks\": [],\n  \"events\": [],\n  \"firewall\": { \"domain\": \"unknown\", \"private\": \"unknown\", \"public\": \"unknown\" },\n  \"updates\": { \"status\": \"unknown\", \"lastCheckedAt\": null, \"pending\": [] }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/agent/heartbeat",
+            "description": "Accepts bounded typed HostSnapshot data. Empty example arrays are schema guidance only, not a valid host observation. Do not hand-author or submit fabricated host data; the real agent constructs this payload."
+          }
+        },
+        {
+          "name": "Poll for queued work",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{agentToken}}", "type": "text" }
+            ],
+            "url": "{{baseUrl}}/api/agent/poll",
+            "description": "Updates the agent's last-seen time and may return one queued operation. The real agent polls automatically."
+          }
+        },
+        {
+          "name": "Submit operation result",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{agentToken}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operationId\": \"{{operationId}}\",\n  \"status\": \"succeeded\",\n  \"result\": \"{{operationResult}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/agent/results",
+            "description": "The server accepts results only for an operation that is currently running on this agent. A real agent sends the actual outcome; never submit a made-up result."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Typed host operations",
+      "item": [
+        {
+          "name": "Queue typed operation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"system.refresh\",\n  \"targetId\": null,\n  \"confirmationPhrase\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/hosts/{{hostId}}/operations",
+            "description": "Only system.refresh, network.flushDns, service.start, service.stop, service.restart, and process.terminate are supported. Service and process targets must exist in the latest host snapshot. Mutating service/process operations require the exact phrase returned by a 409 confirmation-required response. Send only after reviewing the actual target and impact."
+          }
+        },
+        {
+          "name": "Prepare power action",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"host.restart\",\n  \"hostId\": \"{{hostId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/hosts/{{hostId}}/power/prepare",
+            "description": "Returns a 90-second challenge only when the enrolled host is recently online and the requested action is supported. Inspect hostName, kind, confirmationPhrase, and expiresAt before any confirmation request. Supported kinds are host.restart and host.shutdown."
+          }
+        },
+        {
+          "name": "Confirm prepared power action",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Origin", "value": "{{baseUrl}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirmationPhrase\": \"{{powerConfirmationPhrase}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/power/{{powerChallengeId}}/confirm",
+            "description": "Destructive action. Run manually only after reviewing the exact target and consequence. Copy the exact phrase from the unexpired prepare response. Never run this example as an unattended batch."
+          }
+        },
+        {
+          "name": "Read operation status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/operations/{{operationId}}",
+            "description": "Reads the owner-visible operation record. A queued or running state is not a completed result."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:8443", "type": "string" },
+    { "key": "ownerPairingCode", "value": "", "type": "string" },
+    { "key": "ownerUsername", "value": "", "type": "string" },
+    { "key": "ownerPassword", "value": "", "type": "string" },
+    { "key": "agentDisplayName", "value": "", "type": "string" },
+    { "key": "agentInvitationCode", "value": "", "type": "string" },
+    { "key": "agentId", "value": "", "type": "string" },
+    { "key": "agentToken", "value": "", "type": "string" },
+    { "key": "agentVersion", "value": "", "type": "string" },
+    { "key": "hostId", "value": "", "type": "string" },
+    { "key": "hostName", "value": "", "type": "string" },
+    { "key": "serviceId", "value": "", "type": "string" },
+    { "key": "operationId", "value": "", "type": "string" },
+    { "key": "operationResult", "value": "", "type": "string" },
+    { "key": "powerChallengeId", "value": "", "type": "string" },
+    { "key": "powerConfirmationPhrase", "value": "", "type": "string" },
+    { "key": "collectedAt", "value": "", "type": "string" }
+  ]
+}

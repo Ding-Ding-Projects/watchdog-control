@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'" />
+    <title>Watchdog Control Setup</title>
+    <script type="module" crossorigin src="./assets/index-DwEuv7ck.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-k8DvOaHz.css">
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand-mark" aria-hidden="true">W</div>
+        <div class="brand-copy"><strong>WATCHDOG CONTROL</strong><span>SETUP ASSISTANT</span></div>
+        <div class="topbar-meta"><span id="version-label">Version: loading</span><span id="updated-label">Updated: loading</span></div>
+      </header>
+      <div class="layout">
+        <aside class="rail" aria-label="Setup progress">
+          <div class="rail-intro"><span class="eyebrow">GUIDED SETUP</span><h2>Progress</h2><p id="rail-summary">Choose settings, then review what will change.</p></div>
+          <ol id="step-list" class="step-list"></ol>
+          <div class="rail-footer">Your choices stay on this computer. No owner password is collected here.</div>
+        </aside>
+        <main class="content" id="main-content">
+          <div class="content-scroll" id="content-scroll"></div>
+          <section class="status-row" aria-live="polite" aria-atomic="true">
+            <span id="status-indicator" class="status-indicator"></span>
+            <div><strong id="status-title">Ready</strong><p id="status-message">No service changes have been made.</p></div>
+          </section>
+          <footer class="actions">
+            <md-outlined-button id="back-button">Back</md-outlined-button>
+            <div class="action-group">
+              <md-text-button id="cancel-button">Cancel</md-text-button>
+              <md-filled-button id="next-button">Next</md-filled-button>
+              <md-filled-button id="install-button" hidden>Install and verify automatically</md-filled-button>
+              <md-filled-button id="finish-button" hidden>Finish</md-filled-button>
+            </div>
+          </footer>
+        </main>
+      </div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </div>
+  </body>
+</html>

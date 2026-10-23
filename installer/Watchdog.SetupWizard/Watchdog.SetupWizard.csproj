@@ -18,6 +18,16 @@
     <PublishTrimmed>false</PublishTrimmed>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
+  <ItemGroup Condition="'$(WatchdogBuildUtc)' != '' and '$(WatchdogSourceSha)' != ''">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>WatchdogBuildUtc</_Parameter1>
+      <_Parameter2>$(WatchdogBuildUtc)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>WatchdogSourceSha</_Parameter1>
+      <_Parameter2>$(WatchdogSourceSha)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MaterialDesignThemes" Version="5.3.2" />
   </ItemGroup>

@@ -1,0 +1,42 @@
+services:
+  watchdog:
+    image: ${WATCHDOG_IMAGE:?Set WATCHDOG_IMAGE to an immutable published image digest}
+    init: true
+    restart: unless-stopped
+    ports:
+      - target: 8443
+        published: "${WATCHDOG_HOST_PORT:-8443}"
+        host_ip: "${WATCHDOG_HOST_BIND_IP:?Set WATCHDOG_HOST_BIND_IP to an active private LAN IPv4 address}"
+        protocol: tcp
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      WATCHDOG_DATA_PATH: /var/lib/watchdog-control
+      WATCHDOG_TLS_CERTIFICATE_FILE: /run/secrets/watchdog_tls_certificate
+      WATCHDOG_TLS_CERTIFICATE_PASSWORD_FILE: /run/secrets/watchdog_tls_password
+      WATCHDOG_PAIRING_CODE_FILE: /run/secrets/watchdog_pairing_code
+      WATCHDOG_AGENT_ENROLLMENT_CODE_FILE: /run/secrets/watchdog_agent_enrollment_code
+    volumes:
+      - type: bind
+        source: ${WATCHDOG_DATA_PATH:?Set WATCHDOG_DATA_PATH to a persistent host directory}
+        target: /var/lib/watchdog-control
+    secrets:
+      - watchdog_tls_certificate
+      - watchdog_tls_password
+      - watchdog_pairing_code
+      - watchdog_agent_enrollment_code
+    healthcheck:
+      test: ["CMD", "dotnet", "Watchdog.Web.dll", "--healthcheck"]
+      interval: 20s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+secrets:
+  watchdog_tls_certificate:
+    file: ${WATCHDOG_TLS_CERTIFICATE_HOST_FILE:?Set WATCHDOG_TLS_CERTIFICATE_HOST_FILE}
+  watchdog_tls_password:
+    file: ${WATCHDOG_TLS_PASSWORD_HOST_FILE:?Set WATCHDOG_TLS_PASSWORD_HOST_FILE}
+  watchdog_pairing_code:
+    file: ${WATCHDOG_PAIRING_CODE_HOST_FILE:?Set WATCHDOG_PAIRING_CODE_HOST_FILE}
+  watchdog_agent_enrollment_code:
+    file: ${WATCHDOG_AGENT_ENROLLMENT_CODE_HOST_FILE:?Set WATCHDOG_AGENT_ENROLLMENT_CODE_HOST_FILE}

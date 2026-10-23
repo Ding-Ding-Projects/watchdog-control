@@ -8,6 +8,7 @@
   <title>Watchdog Control documentation</title>
   <link rel="stylesheet" href="assets/site.css">
   <script defer src="assets/content.js"></script>
+  <script defer src="assets/current-content.js"></script>
   <script defer src="assets/site.js"></script>
 </head>
 <body>
@@ -33,28 +34,28 @@
   <div class="layout">
     <aside class="sidebar" aria-label="Documentation navigation">
       <div class="sidebar-label">Your tasks</div>
-      <a href="#guide">Guided workflows</a><a href="#features">Feature status</a><a href="#article/architecture">Understand the architecture</a><a href="#article/security">Pair safely</a><a href="#article/operations">Operate and recover</a><a href="#wiki">Wiki chapters</a>
+      <a href="#guide">Guided workflows</a><a href="#guide/install">Install on Windows</a><a href="#features">Feature status</a><a href="#article/architecture">Understand the architecture</a><a href="#article/security">Pair safely</a><a href="#article/operations">Operate and recover</a><a href="#wiki">Wiki chapters</a>
       <div class="sidebar-label">Reference</div>
       <div id="category-links"></div>
       <a href="#settings" class="sidebar-settings">Preferences and settings</a>
-      <div class="sidebar-note"><strong>Current state</strong><span>Product workflows are planned until verified by a release.</span></div>
+      <div class="sidebar-note"><strong>Current state</strong><span>Source and local build are verified; release and runtime checks remain pending.</span></div>
     </aside>
     <main id="main" tabindex="-1">
       <section id="home" class="view">
         <section class="hero">
           <div class="eyebrow">A practical guide to safe host management</div>
           <h1>Know what is happening before you act.</h1>
-          <p>Use guided articles to understand the planned Watchdog Control workflows, their security boundaries, and what is actually available today.</p>
+          <p>Use task guides to understand implemented source workflows, their security boundaries, and what still needs a release or host check.</p>
           <div class="hero-actions"><a class="primary-link" href="#guide">Choose a task</a><a class="text-link" href="#article/security">Read the security model</a></div>
-          <div class="hero-status"><span class="status-dot planned"></span><span><strong>Product status: Planned</strong><small>No product build or runtime has been verified yet.</small></span></div>
+          <div class="hero-status"><span class="status-dot planned"></span><span><strong>Product status: Source implemented</strong><small>The local root build succeeded; public release and host runtime remain unverified.</small></span></div>
         </section>
         <section class="section-block" id="guide">
           <div class="section-title"><div><div class="eyebrow">Start with what you need to do</div><h2>Guided workflows</h2></div><p>These guides describe intended workflows. They do not run the product.</p></div>
           <div id="workflow-cards" class="workflow-grid"></div>
         </section>
         <section class="section-block split-section">
-          <div><div class="eyebrow">Understand the boundary</div><h2>Documentation is not the control surface</h2><p>This documentation explains the product and its state. It cannot authenticate to a host, run a command, read host records, or confirm a shutdown or restart. Those actions require the product's future authenticated client and server-side checks.</p><a href="#article/architecture" class="arrow-link">Read the architecture guide <span aria-hidden="true">→</span></a></div>
-          <div class="status-card"><div class="status-card-top"><span class="status-dot planned"></span><span>Delivery state</span><span class="pill">Planned</span></div><h3>Product capabilities are not yet confirmed</h3><p>Current repository records say the product source, build output, image publication, and runtime verification are pending. Feature articles preserve that state rather than implying a working control.</p><a href="#features">Review the feature inventory</a></div>
+          <div><div class="eyebrow">Understand the boundary</div><h2>Documentation is not the control surface</h2><p>This guide explains the product and its state. It cannot authenticate to a host, read host records, or confirm a shutdown or restart. Those operations belong to the separate authenticated product runtime and remain unverified on a live computer.</p><a href="#article/architecture" class="arrow-link">Read the architecture guide <span aria-hidden="true">→</span></a></div>
+          <div class="status-card"><div class="status-card-top"><span class="status-dot planned"></span><span>Delivery state</span><span class="pill">Source implemented</span></div><h3>Release and host checks remain open</h3><p>The source builds locally. Image publication, downloadable release files, installation, service health, and remote client access have not been verified.</p><a href="#features">Review the feature inventory</a></div>
         </section>
         <section class="section-block" id="feature-preview"><div class="section-title"><div><div class="eyebrow">No capability hidden in a footnote</div><h2>Feature status</h2></div><a href="#features" class="arrow-link">Open full inventory →</a></div><div id="feature-preview-list" class="feature-preview-list"></div></section>
       </section>

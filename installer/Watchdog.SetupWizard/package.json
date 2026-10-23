@@ -1,0 +1,46 @@
+{
+  "name": "watchdog-control-setup",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portable setup assistant for Watchdog Control",
+  "type": "module",
+  "main": "main.cjs",
+  "scripts": {
+    "build": "node scripts/write-build-provenance.mjs && vite build",
+    "package:portable": "npm run build && electron-builder --win portable --x64 --publish never",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "@material/web": "2.5.0",
+    "electron": "44.9.0",
+    "electron-builder": "26.15.3",
+    "vite": "8.3.5"
+  },
+  "build": {
+    "appId": "com.dingdingprojects.watchdogcontrol.setup",
+    "productName": "Watchdog Control Setup",
+    "asar": true,
+    "directories": {
+      "output": "../../artifacts/electron-setup"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "build-provenance.json",
+      "dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "WatchdogControlSetup.exe"
+    },
+    "portable": {
+      "artifactName": "WatchdogControlSetup.exe"
+    }
+  }
+}

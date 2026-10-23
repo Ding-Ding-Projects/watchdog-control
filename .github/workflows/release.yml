@@ -1,0 +1,254 @@
+name: Build and publish Watchdog Control
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watchdog-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-build:
+    name: Build Windows delivery files
+    runs-on: windows-2025
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Build and package through the root entrypoint
+        shell: cmd
+        run: call build-installer.bat
+      - name: Upload safe Windows outputs, including partial results
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: watchdog-windows-${{ github.run_id }}-${{ github.sha }}
+          path: |
+            artifacts/agent/WatchdogAgent.exe
+            release/WatchdogControlSetup.exe
+            release/WatchdogControlSetup.exe.sha256
+          if-no-files-found: warn
+          retention-days: 14
+
+  image-build:
+    name: Build and publish the container image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_digest: ${{ steps.published.outputs.digest }}
+      image_reference: ${{ steps.image-reference.outputs.reference }}
+      release_version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js for pinned tooling
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+      - name: Ensure the pinned GitHub CLI is available
+        run: node scripts/bootstrap-gh-cli.mjs
+      - name: Read the release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(tr -d '\r\n' < VERSION)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'VERSION must be a three-part numeric version.'; exit 2; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Prepare the container builder
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - name: Sign in to GitHub Container Registry for the main release
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Build and publish the immutable release image
+        id: published
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/ding-ding-projects/watchdog-control:v${{ steps.version.outputs.version }}
+            ghcr.io/ding-ding-projects/watchdog-control:sha-${{ github.sha }}
+          build-args: |
+            VERSION=v${{ steps.version.outputs.version }}
+            VCS_REF=${{ github.sha }}
+            SOURCE_URL=https://github.com/${{ github.repository }}
+          labels: |
+            org.opencontainers.image.title=Watchdog Control
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=v${{ steps.version.outputs.version }}
+      - name: Record the immutable image reference
+        id: image-reference
+        if: github.ref == 'refs/heads/main'
+        env:
+          IMAGE_DIGEST: ${{ steps.published.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]] || { echo 'The registry did not return an immutable image digest.'; exit 1; }
+          echo "reference=ghcr.io/ding-ding-projects/watchdog-control@${IMAGE_DIGEST}" >> "$GITHUB_OUTPUT"
+      - name: Build the image for non-main source refs
+        if: github.ref != 'refs/heads/main'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ghcr.io/ding-ding-projects/watchdog-control:sha-${{ github.sha }}
+          build-args: |
+            VERSION=v${{ steps.version.outputs.version }}
+            VCS_REF=${{ github.sha }}
+            SOURCE_URL=https://github.com/${{ github.repository }}
+          labels: |
+            org.opencontainers.image.title=Watchdog Control
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=v${{ steps.version.outputs.version }}
+      - name: Make the published package public and read back its visibility
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.ORG_TOKEN || github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method PATCH "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/watchdog-control/visibility" --field visibility=public >/dev/null
+          visibility="$(gh api "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/watchdog-control" --jq '.visibility')"
+          [[ "$visibility" == public ]] || { echo 'The registry did not confirm public package visibility.'; exit 1; }
+      - name: Pull the digest without registry credentials and export the release file
+        if: github.ref == 'refs/heads/main'
+        env:
+          IMAGE_DIGEST: ${{ steps.published.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]] || { echo 'The registry did not return an immutable image digest.'; exit 1; }
+          image="ghcr.io/ding-ding-projects/watchdog-control@${IMAGE_DIGEST}"
+          anonymous_config="$RUNNER_TEMP/watchdog-anonymous-docker-config"
+          mkdir -p "$anonymous_config" artifacts
+          DOCKER_CONFIG="$anonymous_config" docker pull "$image"
+          docker save --output artifacts/watchdog-control-image-linux-amd64.tar "$image"
+          sha256sum artifacts/watchdog-control-image-linux-amd64.tar > artifacts/watchdog-control-image-linux-amd64.tar.sha256
+          printf 'digest=%s\nreference=%s\n' "$IMAGE_DIGEST" "$image" > artifacts/image-provenance.txt
+      - name: Upload safe image outputs, including partial results
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: watchdog-image-${{ github.run_id }}-${{ github.sha }}
+          path: |
+            artifacts/watchdog-control-image-linux-amd64.tar
+            artifacts/watchdog-control-image-linux-amd64.tar.sha256
+            artifacts/image-provenance.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  release:
+    name: Create and verify the normal release
+    if: github.ref == 'refs/heads/main'
+    needs: [windows-build, image-build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      actions: read
+      contents: write
+      packages: read
+    env:
+      GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.ORG_TOKEN || github.token }}
+    steps:
+      - name: Check out exact release source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js for the verified release tooling
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+      - name: Ensure the pinned GitHub CLI is available
+        run: node scripts/bootstrap-gh-cli.mjs
+      - name: Download Windows build outputs
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: watchdog-windows-${{ github.run_id }}-${{ github.sha }}
+          path: build/windows
+      - name: Download the published image archive
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: watchdog-image-${{ github.run_id }}-${{ github.sha }}
+          path: build/image
+      - name: Assemble source-bound release assets
+        env:
+          IMAGE_REFERENCE: ${{ needs.image-build.outputs.image_reference }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          RELEASE_VERSION: ${{ needs.image-build.outputs.release_version }}
+          IMAGE_ARCHIVE: ${{ github.workspace }}/build/image/watchdog-control-image-linux-amd64.tar
+          RELEASE_ASSET_DIR: ${{ github.workspace }}/release-assets
+        run: node scripts/prepare-release.mjs
+      - name: Create a normal release from this exact main source
+        shell: bash
+        env:
+          RELEASE_TAG: v${{ needs.image-build.outputs.release_version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release tag $RELEASE_TAG already exists. Existing releases are immutable and will not be replaced."
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" \
+            release-assets/WatchdogControlSetup.exe \
+            release-assets/watchdog-agent-win-x64.exe \
+            release-assets/watchdog-control-image-linux-amd64.tar \
+            release-assets/compose.yaml \
+            release-assets/host.bat \
+            release-assets/host.ps1 \
+            release-assets/.env.example \
+            release-assets/watchdog-release-manifest.json \
+            release-assets/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Watchdog Control $RELEASE_TAG" \
+            --notes-file "docs/releases/${RELEASE_TAG}.md"
+      - name: Read back the release, tag target, and every downloadable file
+        env:
+          RELEASE_TAG: v${{ needs.image-build.outputs.release_version }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          RELEASE_ASSET_DIR: ${{ github.workspace }}/release-assets
+          REMOTE_ASSET_DIR: ${{ github.workspace }}/release-readback
+        run: node scripts/verify-release.mjs
+      - name: Upload safe release outputs and verification, including failures
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: watchdog-release-evidence-${{ github.run_id }}-${{ github.sha }}
+          path: |
+            release-assets/**
+            release-readback/**
+            release-verification.json
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,0 +1,100 @@
+# Copy only after deploying the reviewed CI entrypoint, scanner and exceptions file
+# to the trusted policy commit. Set PUBLICATION_SCAN_POLICY_SHA to that full SHA.
+# Store the versioned envelope as PUBLICATION_LANGUAGE_DATA in repository
+# secrets. Raw JSON or the documented gzip+base64 envelope is accepted via stdin.
+# No dictionary, fixed dictionary digest, matched text or snippets belong here.
+# This check runs after transmission. Local hooks prevent transmission separately;
+# configure a required protected-branch check to prevent contaminated integration.
+name: Publication language scan
+on:
+  push:
+    branches: ['**']
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: Manual execution checks the current tree only, without history proof.
+        type: choice
+        required: true
+        default: current-tree-only
+        options: [current-tree-only]
+permissions:
+  contents: read
+jobs:
+  publication-language:
+    name: ${{ github.event_name == 'workflow_dispatch' && 'publication-language-current-tree' || 'publication-language' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      NODE_OPTIONS: ''
+      NODE_PATH: ''
+    steps:
+      - name: Set up the pinned Node.js major for trusted scanning
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+      - name: Validate trusted policy pin and target
+        env:
+          POLICY_SHA: ${{ vars.PUBLICATION_SCAN_POLICY_SHA }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.event.after || github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_SCOPE: ${{ inputs.scope }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$POLICY_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo 'Trusted policy pin is unavailable.'; exit 2; }
+          [[ "$CANDIDATE_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo 'Candidate identity is unavailable.'; exit 2; }
+          if [[ "$EVENT_NAME" == workflow_dispatch ]]; then
+            [[ "$MANUAL_SCOPE" == current-tree-only ]] || { echo 'Explicit manual scope is unavailable.'; exit 2; }
+          elif [[ "$EVENT_NAME" == push || "$EVENT_NAME" == pull_request_target ]]; then
+            [[ "$BASE_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo 'Event base is unavailable.'; exit 2; }
+            [[ "$BASE_SHA" != 0000000000000000000000000000000000000000 ]] || { echo 'Event base publication is unknown.'; exit 2; }
+          else
+            echo 'Unsupported event.'; exit 2
+          fi
+          node -e 'if(Number(process.versions.node.split(".")[0]) < 22) process.exit(2)'
+      - name: Read pinned trusted scanner
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ vars.PUBLICATION_SCAN_POLICY_SHA }}
+          path: trusted-policy
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - name: Read candidate as data only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.event.after || github.sha }}
+          path: candidate
+          persist-credentials: false
+          submodules: false
+          lfs: false
+          fetch-depth: 0
+      - name: Scan event history with pinned trusted code and private runtime policy
+        env:
+          PUBLICATION_DICTIONARY: ${{ secrets.PUBLICATION_LANGUAGE_DATA }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.event.after || github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_SCOPE: ${{ inputs.scope }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          args=(--root "$GITHUB_WORKSPACE/candidate" --tip "$CANDIDATE_SHA"
+            --exceptions-file "$GITHUB_WORKSPACE/trusted-policy/scripts/public-language-exceptions.json")
+          if [[ "$EVENT_NAME" == workflow_dispatch && "$MANUAL_SCOPE" == current-tree-only ]]; then
+            args+=(--mode current-tree-only)
+          elif [[ "$EVENT_NAME" == push || "$EVENT_NAME" == pull_request_target ]]; then
+            args+=(--mode history --base "$BASE_SHA")
+          else
+            echo 'Unsupported event scope.'; exit 2
+          fi
+          node -e 'process.stdout.write(process.env.PUBLICATION_DICTIONARY || "")' |
+            env -u NODE_OPTIONS -u NODE_PATH -u GIT_DIR -u GIT_WORK_TREE \
+              -u GIT_COMMON_DIR -u GIT_INDEX_FILE -u GIT_OBJECT_DIRECTORY \
+              -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_CONFIG -u GIT_CONFIG_COUNT \
+              -u GIT_CONFIG_PARAMETERS \
+              node "$GITHUB_WORKSPACE/trusted-policy/scripts/run-publication-language-ci.mjs" "${args[@]}"
