@@ -2,32 +2,31 @@
 
 ## Current state
 
-The public repository `Ding-Ding-Projects/watchdog-control` is on `main`. Its last verified source before the current changes was `5d19bb463b624a60b38aae360f607572fa003b8a`.
+The public repository `Ding-Ding-Projects/watchdog-control` is on local and hosted `main` at `453c0a64aded8d96961af4b5618df4bb053f2414` before the current uncommitted changes. Normal release `v0.1.1` targets `1e39ae2647ab8959867f8050a340f0a3a1421cf4` and is neither draft nor prerelease.
 
-The immutable container image for that source is available at `ghcr.io/ding-ding-projects/watchdog-control@sha256:8a652e9a5a5704a62abd7940131e5de84a0c2ba8019088f6f0637638b8808466`; the release workflow completed an anonymous pull. Normal release `v0.1.0` targets the same source and publishes `default.env.example`. The earlier verifier expected `.env.example`, so that prior run stopped on a verifier filename mismatch. The release manifest also lacks `service.composeSha256`, which the updated assistant needs to verify its embedded Compose file. A new normal release `v0.1.1` is required for that contract; the earlier release remains immutable.
+The release asset `WatchdogControlSetup.exe` is 68,084,205 bytes with SHA-256 `f8154f0d6978c1b95175fab12ecfaa3bed378c94338205459f9bf4a36e2d3114`. It includes the bundled `compose.yaml` integrity check. On the current host, it launched without installation and its welcome-screen action pulled the verified image, wrote the service configuration, started only the Watchdog Control Compose project, and returned HTTPS health HTTP 200. The container remained healthy after the setup window exited on a concurrent write to `progress.json.tmp`.
 
-Current source changes prepare the corrected asset name, add a Compose SHA-256 to the release manifest, embed `compose.yaml` in the setup assistant, add a one-click local hosting action, and make double-clicking `host.bat` default to starting the service after an eight-second menu timeout. The new assistant path requires an already-ready local Docker Engine and does not install Docker or the optional host agent.
+The current source gives every progress save a unique temporary file before atomically replacing the destination. The version is set to `0.1.2`. A focused 32-writer concurrency check has been added but not run. The current source, new single-file package, post-fix GUI launch, and usable built-interface capture remain unverified. An earlier white capture was rejected and is not current evidence.
 
-The current root `build.bat` completed on 2026-10-23 with 0 warnings and 0 errors for the latest source. The updated single-file assistant has not yet been built or inspected. No product container has been started. The earlier setup assistant capture was blank and remains historical, not current UI evidence.
+## Current evidence
 
-## Verified release evidence
+- Normal release `v0.1.1` exists for source `1e39ae2647ab8959867f8050a340f0a3a1421cf4` with the expected setup file, Compose, host controls, image archive, manifest, and checksums.
+- The released setup file completed the one-click host operation through its real welcome-screen button without installing software on a computer with an already-ready local engine.
+- The service passed its local HTTPS health check with HTTP 200 and Docker reported the container healthy.
+- The setup window crashed after hosting while concurrent progress writers contended for a shared temporary path. The source fix is present locally and still needs a rebuilt package and runtime confirmation.
+- A read-only audit of current public records covered the open issue, its 17 comments, the progress Discussion and its 20 comments/replies, both releases, and the deployed documentation home with five same-origin assets. It found 16 wording findings across nine authored comments. Those comment bodies still need correction and exact readback before the public-record review can close.
+- Cross-device LAN access, owner pairing, client certificate trust, agent enrollment, typed host operations, and native prerequisite installation remain unverified.
+- Public documentation contains the v0.1.1 runtime result and labels the new fix and package as pending. The current screenshot and hosted documentation readback remain pending.
+- Automated tests have not run; they remain reserved for after implementation and functional acceptance.
 
-- Release workflow run `39997342016` built the Windows delivery, published the immutable image, verified an anonymous image pull, and created normal release `v0.1.0` for source `5d19bb463b624a60b38aae360f607572fa003b8a`.
-- Published image digest: `sha256:8a652e9a5a5704a62abd7940131e5de84a0c2ba8019088f6f0637638b8808466`.
-- The earlier full release verifier stopped because it expected `.env.example`; readback of the published asset list confirms the actual `default.env.example` name. The published `v0.1.0` manifest has no `service.composeSha256`, so it cannot satisfy the updated assistant's embedded-Compose check. Full `v0.1.1` release readback remains pending.
-- Documentation deployment run `39997341634` succeeded for `5d19bb4`, but the live home, internal routes, assets, download link, and stored homepage still need readback.
-- Publication-language run `39997341659` succeeded for source `5d19bb4`.
-- Issue #1 and rolling Discussion #2 track the current work: https://github.com/Ding-Ding-Projects/watchdog-control/issues/1 and https://github.com/Ding-Ding-Projects/watchdog-control/discussions/2.
+## Next actions
 
-## Next work
+1. Finish the source and documentation review and run the publication-language scan.
+2. Preserve the reviewed source and documentation on `main`, then run the exact root `build-installer.bat` entrypoint.
+3. Launch the resulting single-file setup tool on a fresh named hidden desktop, inspect the actual window, and capture only genuine, readable pixels without authentication values.
+4. Verify that saved progress loads and the setup window stays open after the already-running service is recognized. Do not start another container when the existing service is healthy.
+5. Complete the requested local acceptance, then run the 32-writer concurrency check last. Update the final records from actual outputs.
+6. Correct the nine authored public comments found by the read-only audit, reread their stored bodies, and record any platform edit-history limit.
+7. push the final `main` state, verify `git ls-remote`, then read back the normal v0.1.2 release, assets, immutable image, and deployed documentation routes.
 
-1. Finish source and documentation review, then scan public-bound files for private vocabulary.
-2. Preserve the reviewed changes on `main` and verify the GitHub ref before building.
-3. Run the exact root build and packaging entrypoints, then inspect the real built assistant on the named hidden desktop. Capture genuine current screenshots with no pairing code or other sensitive values visible.
-4. Verify quick-host behavior, `host.bat` modes, release asset names, Compose digest matching, and the new `v0.1.1` release from GitHub readback.
-5. Verify deployed GitHub Pages routes and release download, then perform the authorized real container startup, authentication, health, and client-side LAN checks while preserving unrelated host state.
-6. Run automated tests last, after implementation and functional acceptance. Keep every not-yet-run test explicitly pending.
-
-## Boundaries
-
-The local host power state is never changed. Product shutdown and restart verification must use a separate authorized target. Preserve unrelated containers, volumes, data, credentials, and user configuration. A source build, release publication, server-side health response, LAN mapping, and client-side reachability are distinct evidence claims.
+The current service remains running. No computer shutdown or restart was initiated. Preserve unrelated containers, volumes, files, authentication, and user configuration. Use only GitHub CLI for forge work and do not rewrite history.

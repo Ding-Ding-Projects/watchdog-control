@@ -1655,7 +1655,7 @@ public partial class MainWindow : Window
     private static HttpClient CreateHttpClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("WatchdogControlSetup/0.1.1");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("WatchdogControlSetup/0.1.2");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
     }
@@ -1780,7 +1780,7 @@ internal sealed class SetupStateStore
         catch (IOException) { return RecoveryRequired("The saved setup record could not be accessed because of a storage problem."); }
         try
         {
-            await using var input = new FileStream(StatePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            await using var input = new FileStream(StatePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
             if (input.Length > 32 * 1024) return RecoveryRequired("The saved setup record exceeds the supported 32 KiB size limit.");
             var state = await JsonSerializer.DeserializeAsync<SetupState>(input, JsonOptions);
             if (state is null || string.IsNullOrWhiteSpace(state.StorageDirectory) || string.IsNullOrWhiteSpace(state.ComposeDirectory) ||
@@ -1821,14 +1821,29 @@ internal sealed class SetupStateStore
         return preservedPath;
     }
 
-    public async Task SaveAsync(SetupState state)
+    public Task SaveAsync(SetupState state) => SaveAsync(StatePath, state);
+
+    internal static async Task SaveAsync(string statePath, SetupState state)
     {
-        var directory = Path.GetDirectoryName(StatePath)!;
+        ArgumentException.ThrowIfNullOrWhiteSpace(statePath);
+        ArgumentNullException.ThrowIfNull(state);
+        var destination = Path.GetFullPath(statePath);
+        var directory = Path.GetDirectoryName(destination)!;
         Directory.CreateDirectory(directory);
-        var temp = StatePath + ".tmp";
-        await using (var output = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
-            await JsonSerializer.SerializeAsync(output, state, JsonOptions);
-        File.Move(temp, StatePath, true);
+        var temp = Path.Combine(directory, $"{Path.GetFileName(destination)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await using (var output = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+                await JsonSerializer.SerializeAsync(output, state, JsonOptions);
+            File.Move(temp, destination, true);
+        }
+        catch
+        {
+            try { File.Delete(temp); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            throw;
+        }
     }
 
     private static SetupState RecoveryRequired(string reason) => new() { ProgressRecoveryWarning = reason };

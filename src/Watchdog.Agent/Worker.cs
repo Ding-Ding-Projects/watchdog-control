@@ -115,7 +115,7 @@ public sealed class Worker(
                 configuration.AgentId,
                 configuration.DisplayName,
                 "Windows",
-                typeof(Worker).Assembly.GetName().Version?.ToString() ?? "0.1.1"), options: JsonOptions)
+                typeof(Worker).Assembly.GetName().Version?.ToString() ?? "0.1.2"), options: JsonOptions)
         };
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", code);
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
