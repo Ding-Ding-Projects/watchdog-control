@@ -173,16 +173,6 @@ jobs:
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=v${{ steps.version.outputs.version }}
-      - name: Make the published package public and read back its visibility
-        if: github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.ORG_TOKEN || secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh api --method PATCH "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/watchdog-control/visibility" --field visibility=public >/dev/null
-          visibility="$(gh api "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/watchdog-control" --jq '.visibility')"
-          [[ "$visibility" == public ]] || { echo 'The registry did not confirm public package visibility.'; exit 1; }
       - name: Pull the digest without registry credentials and export the release file
         if: github.ref == 'refs/heads/main'
         env:
