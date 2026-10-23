@@ -5,7 +5,7 @@
 # No dictionary, fixed dictionary digest, matched text or snippets belong here.
 # This check runs after transmission. Local hooks prevent transmission separately;
 # configure a required protected-branch check to prevent contaminated integration.
-# The first publication scans its root snapshot and then every descendant pre-dew.
+# The first release scan covers its root commit snapshot and every later commit.
 name: Publication language scan
 on:
   push:
@@ -98,7 +98,7 @@ jobs:
           elif [[ "$EVENT_NAME" == push || "$EVENT_NAME" == pull_request_target ]]; then
             if [[ "$EVENT_NAME" == push && "$BASE_SHA" == 0000000000000000000000000000000000000000 ]]; then
               roots=$(git -C "$GITHUB_WORKSPACE/candidate" rev-list --max-parents=0 "$CANDIDATE_SHA")
-              [[ $(wc -w <<<"$roots") -eq 1 ]] || { echo 'Candidate must have exactly one root pre-dew for first-publication scanning.'; exit 2; }
+              [[ $(wc -w <<<"$roots") -eq 1 ]] || { echo 'Candidate must have exactly one root commit for initial-history scanning.'; exit 2; }
               root_sha="$roots"
               root_args=(--root "$GITHUB_WORKSPACE/candidate" --tip "$root_sha" --mode current-tree-only --exceptions-file "$exceptions_file")
               history_args=(--root "$GITHUB_WORKSPACE/candidate" --tip "$CANDIDATE_SHA" --mode history --base "$root_sha" --exceptions-file "$exceptions_file")
