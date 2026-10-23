@@ -1,0 +1,1173 @@
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.AccessControl;
+using System.Security.Principal;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Navigation;
+using Microsoft.Win32;
+
+namespace Watchdog.SetupWizard;
+
+public partial class MainWindow : Window
+{
+    private const int StepCount = 6;
+    private const string OwnerRepository = "Ding-Ding-Projects/watchdog-control";
+    private const string ManifestAssetName = "watchdog-release-manifest.json";
+    private const string ImagePrefix = "ghcr.io/ding-ding-projects/watchdog-control@sha256:";
+    private static readonly TimeSpan CommandTimeout = TimeSpan.FromMinutes(12);
+    private static readonly HttpClient Http = CreateHttpClient();
+    private readonly SetupStateStore _stateStore = new();
+    private SetupState _state = new();
+    private CancellationTokenSource? _operationCancellation;
+    private int _step = 0;
+    private bool _operationRunning;
+    private string _pairingCode = string.Empty;
+    private string _certificatePath = string.Empty;
+    private string _certificatePasswordPath = string.Empty;
+    private string _pairingPath = string.Empty;
+    private string _agentEnrollmentPath = string.Empty;
+    private string _certificateFingerprint = string.Empty;
+    private string _publicCertificatePath = string.Empty;
+    private TextBox? _portBox;
+    private TextBox? _storageBox;
+    private TextBlock? _prerequisiteStatus;
+    private TextBlock? _operationOutput;
+    private ProgressBar? _operationProgress;
+    private TextBlock? _reviewDetails;
+    private Button? _installDockerButton;
+    private Button? _startInstallButton;
+    private Button? _finishButton;
+    private Button? _retryAgentButton;
+    private readonly List<StepIndicator> _indicators = [];
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        BuildStepList();
+        VersionText.Text = BuildProvenance.ReadableLabel();
+    }
+
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        _state = await _stateStore.LoadAsync();
+        _certificateFingerprint = _state.CertificateFingerprint ?? string.Empty;
+        _publicCertificatePath = _state.PublicCertificatePath ?? string.Empty;
+        _agentEnrollmentPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ding-Ding-Projects", "WatchdogControlSetup", "secrets", "watchdog_agent_enrollment_code");
+        var pairingPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ding-Ding-Projects", "WatchdogControlSetup", "secrets", "watchdog_pairing_code");
+        if (!_state.PairingCodeShown && File.Exists(pairingPath)) _pairingCode = await File.ReadAllTextAsync(pairingPath);
+        if (!string.IsNullOrWhiteSpace(_state.StorageDirectory))
+            _step = Math.Clamp(_state.LastStep, 0, StepCount - 1);
+        RenderStep();
+        if (_step == 2)
+            await ProbeDockerAsync();
+        await ProbeReleaseAsync();
+        Keyboard.Focus(NextButton);
+    }
+
+    private async Task ProbeReleaseAsync()
+    {
+        try
+        {
+            await EnsureManifestAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _state.ManifestAvailable = false;
+            _state.ManifestUnavailableReason = SafeSummary(ex.Message);
+            SetStatus("No verified normal release image is available. Setup cannot start without its immutable manifest.", false);
+            await SaveStateAsync();
+        }
+        if (_step == 0) RenderStep();
+        RefreshReview();
+    }
+
+    private void BuildStepList()
+    {
+        string[] titles = ["Welcome", "Host settings", "Prerequisites", "Manage this computer", "Review", "Install and verify"];
+        string[] subtitles = ["What this setup changes", "HTTPS port and persistent data", "Container runtime", "Pairing, TLS and optional Windows agent", "Confirm the destination", "Pull, start, health check"];
+        for (var i = 0; i < titles.Length; i++)
+        {
+            var dot = new Border
+            {
+                Width = 30, Height = 30, CornerRadius = new CornerRadius(15),
+                Background = new SolidColorBrush(Color.FromRgb(238, 242, 249)),
+                Child = new TextBlock { Text = (i + 1).ToString(), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.SemiBold }
+            };
+            var title = new TextBlock { Text = titles[i], FontWeight = FontWeights.SemiBold, FontSize = 13 };
+            var sub = new TextBlock { Text = subtitles[i], Foreground = (Brush)FindResource("TextSecondary"), FontSize = 11, Margin = new Thickness(0, 3, 0, 0) };
+            var text = new StackPanel { Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Children = { title, sub } };
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 18), Children = { dot, text } };
+            StepList.Children.Add(row);
+            _indicators.Add(new StepIndicator(dot, title));
+        }
+    }
+
+    private void RenderStep()
+    {
+        PageHost.Children.Clear();
+        var isDone = _state.InstallationVerified;
+        var contentStep = isDone ? StepCount - 1 : _step;
+        StepCounter.Text = isDone ? "SETUP COMPLETE" : $"STEP {contentStep + 1} OF {StepCount}";
+        for (var i = 0; i < _indicators.Count; i++)
+        {
+            _indicators[i].Dot.Background = i == contentStep ? new SolidColorBrush(Color.FromRgb(36, 88, 211)) : i < contentStep ? new SolidColorBrush(Color.FromRgb(210, 224, 255)) : new SolidColorBrush(Color.FromRgb(238, 242, 249));
+            _indicators[i].Title.Foreground = i == contentStep ? new SolidColorBrush(Color.FromRgb(30, 75, 185)) : (Brush)FindResource("TextSecondary");
+            _indicators[i].Title.FontWeight = i == contentStep ? FontWeights.Bold : FontWeights.SemiBold;
+            ((TextBlock)_indicators[i].Dot.Child!).Foreground = i == contentStep ? Brushes.White : (Brush)FindResource("TextPrimary");
+        }
+        BackButton.IsEnabled = !_operationRunning && !isDone && contentStep > 0;
+        CancelButton.IsEnabled = true;
+        NextButton.Visibility = contentStep < 4 && !isDone ? Visibility.Visible : Visibility.Collapsed;
+        NextButton.Content = contentStep == 3 ? "Review setup" : "Next";
+        if (isDone)
+        {
+            ShowDonePage();
+            return;
+        }
+        switch (contentStep)
+        {
+            case 0: ShowWelcomePage(); break;
+            case 1: ShowHostSettingsPage(); break;
+            case 2: ShowPrerequisitesPage(); break;
+            case 3: ShowAccessPage(); break;
+            case 4: ShowReviewPage(); break;
+            default: ShowOperationPage(); break;
+        }
+    }
+
+    private void ShowWelcomePage()
+    {
+        AddEyebrow("WATCHDOG CONTROL  /  SETUP");
+        AddHeading("A clear path to a running service.");
+        AddBody("This assistant prepares the Watchdog Control container on the Docker host selected by your current Docker context. It downloads the configuration from the exact source revision named by the latest public release, pulls that release’s immutable image, starts only the Watchdog Control Compose project, then checks service health and the host’s LAN address.");
+        AddCallout("Before setup", "This changes Docker resources on the active context. Check the destination below before continuing. Setup never removes unrelated containers or deletes existing service data.", "Info");
+        AddCallout("What this assistant will not do", "It will not accept an arbitrary command, replace an existing data folder, expose a secret in its logs, or restart this computer. Docker installation, if needed, is started only after you choose it and approve any native elevation prompt.", "ShieldCheck");
+        AddBody("The setup record stores your selected port, storage folder, release identity and last completed step in your local profile. It does not store the access credential.");
+        AddReleaseStatus();
+    }
+
+    private void ShowHostSettingsPage()
+    {
+        AddEyebrow("DESTINATION");
+        AddHeading("Choose how the service is reached.");
+        AddBody("Port and storage choices apply to this Watchdog Control service only. The storage folder keeps the service’s data across container updates.");
+        AddLabel("HTTPS host port", "The service listens inside the container on HTTPS port 8443. Choose an unused host port from 1024 to 65535.");
+        _portBox = new TextBox { Text = _state.HostPort.ToString(), Width = 220, HorizontalAlignment = HorizontalAlignment.Left };
+        AutomationProperties.SetName(_portBox, "HTTPS host port");
+        _portBox.PreviewTextInput += (_, args) => args.Handled = args.Text.Any(c => !char.IsDigit(c));
+        DataObject.AddPastingHandler(_portBox, (_, args) => args.CancelCommand());
+        PageHost.Children.Add(_portBox);
+        AddLabel("Persistent data folder", "Choose a folder on this host. The assistant creates it if needed and does not clear existing contents.");
+        var storageRow = new DockPanel { LastChildFill = true };
+        _storageBox = new TextBox { Text = _state.StorageDirectory, IsReadOnly = true, ToolTip = "Choose a folder with Browse" };
+        var browse = new Button { Content = "Browse…", Margin = new Thickness(8, 6, 0, 14), MinWidth = 106 };
+        browse.Click += BrowseStorage_Click;
+        DockPanel.SetDock(browse, Dock.Right);
+        storageRow.Children.Add(browse);
+        storageRow.Children.Add(_storageBox);
+        PageHost.Children.Add(storageRow);
+        AddCallout("Default location", _state.StorageDirectory, "Folder");
+        AddBody("A different Docker context may point to another host. The next step reads its name and reachability before any container operation.");
+    }
+
+    private void ShowPrerequisitesPage()
+    {
+        AddEyebrow("PREREQUISITES");
+        AddHeading("Confirm the container host is ready.");
+        AddBody("The wizard needs a reachable Docker Engine and the Docker Compose plugin. It uses the currently selected context. No container is changed during this check.");
+        var card = NewCard();
+        var stack = (StackPanel)card.Child!;
+        stack.Children.Add(new TextBlock { Text = "Docker Engine and Compose", FontWeight = FontWeights.Bold, FontSize = 16 });
+        _prerequisiteStatus = new TextBlock { Text = _state.DockerStatus ?? "Checking the selected context…", Margin = new Thickness(0, 9, 0, 14), FontSize = 13 };
+        stack.Children.Add(_prerequisiteStatus);
+        var row = new StackPanel { Orientation = Orientation.Horizontal };
+        var check = new Button { Content = "Check again" };
+        check.Click += async (_, _) => await ProbeDockerAsync();
+        row.Children.Add(check);
+        _installDockerButton = new Button { Content = "Install Docker Desktop", Visibility = Visibility.Collapsed };
+        _installDockerButton.Click += InstallDocker_Click;
+        row.Children.Add(_installDockerButton);
+        stack.Children.Add(row);
+        PageHost.Children.Add(card);
+        AddCallout("Docker Desktop is optional when another supported engine is already available.", "The wizard checks its CLI and Compose plugin, then uses the selected context. Installation may require Windows Subsystem for Linux or a user-approved restart. The assistant never initiates a restart.", "Information");
+        AddCallout("No background installer", "If Docker Desktop is missing and WinGet is available, the Install button starts the official package through a visible native consent flow. Declined consent or a required restart leaves setup incomplete.", "ShieldCheck");
+    }
+
+    private void ShowAccessPage()
+    {
+        AddEyebrow("SERVICE ACCESS");
+        AddHeading("Protect the service from first start.");
+        AddBody("The wizard creates a local TLS certificate and a cryptographically random, single-use owner-pairing code. The service receives file paths only. The code appears once after setup, and the owner creates a username and password in the browser over verified HTTPS.");
+        AddCallout("TLS trust", "The public certificate is saved separately and its SHA-256 fingerprint is shown at completion. No trust is installed automatically. Before entering owner credentials, each client must verify and import that certificate using its normal operating-system trust controls.", "Lock");
+        AddCallout("Pairing boundary", "No username or password is collected by this wizard. The pairing code is stored in a protected host file and mounted read-only in the service. The service consumes it once when the first owner is created.", "ShieldCheck");
+        var manageComputer = new CheckBox { Content = "Manage this computer", IsChecked = _state.ManageThisComputer, Margin = new Thickness(0, 18, 0, 4), FontSize = 14 };
+        AutomationProperties.SetName(manageComputer, "Manage this computer with the Watchdog Control Windows agent");
+        manageComputer.Checked += (_, _) => { _state.ManageThisComputer = true; _ = SaveStateAsync(); };
+        manageComputer.Unchecked += (_, _) => { _state.ManageThisComputer = false; _ = SaveStateAsync(); };
+        PageHost.Children.Add(manageComputer);
+        AddBody("When selected, the wizard installs the signed-by-release Windows agent as an automatic service after the dashboard is healthy. Native administrator consent is requested through the standard Windows prompt. If cancelled or unavailable, the dashboard remains running and computer management stays pending.");
+    }
+
+    private void ShowReviewPage()
+    {
+        AddEyebrow("REVIEW");
+        AddHeading("Check the destination before setup.");
+        AddBody("The next action downloads the Compose file from the release’s exact source revision, pulls the pinned image, writes the selected Compose setup, and runs `docker compose up -d` for one named project.");
+        var card = NewCard();
+        var stack = (StackPanel)card.Child!;
+        _reviewDetails = new TextBlock { FontFamily = new FontFamily("Consolas"), FontSize = 13, LineHeight = 24 };
+        stack.Children.Add(_reviewDetails);
+        PageHost.Children.Add(card);
+        var consent = new CheckBox { Content = "I checked this Docker context and want to start the Watchdog Control service.", IsChecked = _state.StartConfirmed, Margin = new Thickness(0, 18, 0, 8), FontSize = 14 };
+        AutomationProperties.SetName(consent, "Confirm Watchdog Control setup destination");
+        consent.Checked += (_, _) => { _state.StartConfirmed = true; _ = SaveStateAsync(); RefreshReview(); };
+        consent.Unchecked += (_, _) => { _state.StartConfirmed = false; _ = SaveStateAsync(); RefreshReview(); };
+        PageHost.Children.Add(consent);
+        AddCallout("Safe update behavior", "Existing service data is preserved. The assistant does not run `down`, prune images, remove volumes, change other Compose projects, or stop unrelated containers.", "ShieldCheck");
+        RefreshReview();
+        _startInstallButton = new Button { Content = "Start setup", MinWidth = 154, IsEnabled = _state.StartConfirmed && _state.ManifestAvailable && _state.DockerReady };
+        _startInstallButton.Click += StartInstall_Click;
+        _startInstallButton.HorizontalAlignment = HorizontalAlignment.Left;
+        PageHost.Children.Add(_startInstallButton);
+    }
+
+    private void ShowOperationPage()
+    {
+        AddEyebrow("SETUP ACTIVITY");
+        AddHeading("Preparing Watchdog Control.");
+        AddBody("Progress below comes from the actual Docker operation and health checks. Cancel stops the active setup command where possible. If a container start has already completed, cancel does not stop or remove the service.");
+        _operationProgress = new ProgressBar { Height = 8, IsIndeterminate = true, Margin = new Thickness(0, 12, 0, 18), Foreground = new SolidColorBrush(Color.FromRgb(36, 88, 211)) };
+        PageHost.Children.Add(_operationProgress);
+        var card = NewCard();
+        _operationOutput = new TextBlock { Text = _state.LastOperationSummary ?? "Waiting for setup to start.", FontFamily = new FontFamily("Consolas"), FontSize = 12, MaxHeight = 300, TextWrapping = TextWrapping.Wrap };
+        ((StackPanel)card.Child!).Children.Add(_operationOutput);
+        PageHost.Children.Add(card);
+        _finishButton = new Button { Content = "Finish", Visibility = Visibility.Collapsed, IsEnabled = false };
+        _finishButton.Click += (_, _) => Close();
+        PageHost.Children.Add(_finishButton);
+        if (!_operationRunning && !_state.InstallationVerified && _state.LastOperationSummary is not null)
+            AddCallout("Setup needs attention", _state.LastOperationSummary, "Warning");
+    }
+
+    private void ShowDonePage()
+    {
+        AddEyebrow("SERVICE READY");
+        AddHeading("Watchdog Control is responding.");
+        AddBody("The Compose pull and start completed, and the HTTPS health endpoint answered from this host. The URL below was checked from this host. Verify the displayed certificate fingerprint on every client before entering owner credentials.");
+        if (Uri.TryCreate(_state.LanUrl, UriKind.Absolute, out var lanUri)) AddLinkCallout("LAN address", lanUri);
+        else AddCallout("LAN address", "Not available", "Link");
+        AddCallout("Certificate fingerprint", _certificateFingerprint, "Lock");
+        AddCallout("Public certificate", _publicCertificatePath, "Certificate");
+        AddCallout("One-time owner pairing code", string.IsNullOrEmpty(_pairingCode) ? "This code was shown during the earlier setup completion." : _pairingCode, "Key");
+        if (!string.IsNullOrEmpty(_pairingCode))
+        {
+            AddBody("Copy the code now. This wizard will not show it again. Open the HTTPS address after verifying/importing the certificate, then enter this code and choose the first owner credentials in the browser.");
+            _state.PairingCodeShown = true;
+            _ = SaveStateAsync();
+            _pairingCode = string.Empty;
+        }
+        AddCallout("Release", $"Tag: {_state.ReleaseTag}\nSource: {_state.SourceSha}\nImage: {_state.ImageReference}", "Package");
+        AddCallout("Data folder", _state.StorageDirectory, "Folder");
+        AddCallout("Computer management", _state.ManageThisComputer ? _state.AgentStatus ?? "Pending" : "Not selected", "Computer");
+        if (_state.ManageThisComputer && (_state.AgentStatus is null || _state.AgentStatus.StartsWith("Pending", StringComparison.Ordinal)))
+        {
+            _retryAgentButton = new Button { Content = "Retry computer management", MinWidth = 210, HorizontalAlignment = HorizontalAlignment.Left };
+            _retryAgentButton.Click += RetryAgent_Click;
+            PageHost.Children.Add(_retryAgentButton);
+        }
+        AddBody("The setup assistant is safe to close. Closing it leaves the service running. Use the separate host controls to view logs or stop the service.");
+        _finishButton = new Button { Content = "Finish", MinWidth = 126 };
+        _finishButton.Click += (_, _) => Close();
+        PageHost.Children.Add(_finishButton);
+    }
+
+    private async Task ProbeDockerAsync()
+    {
+        if (_operationRunning) return;
+        if (_prerequisiteStatus is null)
+        {
+            RenderStep();
+            return;
+        }
+        SetStatus("Checking Docker Engine and Compose…", false);
+        _prerequisiteStatus.Text = "Checking Docker CLI, active context and Engine connection…";
+        _installDockerButton!.Visibility = Visibility.Collapsed;
+        try
+        {
+            var version = await CommandRunner.RunAsync("docker", ["--version"], null, null, TimeSpan.FromSeconds(15), CancellationToken.None, null, string.Empty);
+            if (version.ExitCode != 0) throw new InvalidOperationException("Docker CLI is not available on PATH.");
+            var compose = await CommandRunner.RunAsync("docker", ["compose", "version"], null, null, TimeSpan.FromSeconds(15), CancellationToken.None, null, string.Empty);
+            if (compose.ExitCode != 0) throw new InvalidOperationException("The Docker Compose plugin is not available.");
+            var context = await CommandRunner.RunAsync("docker", ["context", "show"], null, null, TimeSpan.FromSeconds(15), CancellationToken.None, null, string.Empty);
+            if (context.ExitCode != 0) throw new InvalidOperationException("Docker could not identify its selected context.");
+            var info = await CommandRunner.RunAsync("docker", ["info", "--format", "{{.ServerVersion}}"], null, null, TimeSpan.FromSeconds(20), CancellationToken.None, null, string.Empty);
+            if (info.ExitCode != 0) throw new InvalidOperationException("Docker Engine did not respond: " + SafeSummary(info.StandardError));
+            _state.DockerReady = true;
+            _state.DockerContext = SafeSummary(context.StandardOutput);
+            _state.DockerStatus = $"Ready · Docker {SafeSummary(version.StandardOutput)} · Compose {SafeSummary(compose.StandardOutput)} · context {_state.DockerContext} · Engine {SafeSummary(info.StandardOutput)}";
+            _prerequisiteStatus.Text = _state.DockerStatus;
+            SetStatus("Docker Engine and Compose are reachable.", true);
+        }
+        catch (Exception ex)
+        {
+            _state.DockerReady = false;
+            _state.DockerStatus = ex.Message;
+            _prerequisiteStatus.Text = ex.Message;
+            _installDockerButton!.Visibility = WingetPath() is null ? Visibility.Collapsed : Visibility.Visible;
+            SetStatus("Docker prerequisites are incomplete. No service changes were made.", false);
+        }
+        await SaveStateAsync();
+        RefreshReview();
+    }
+
+    private async void InstallDocker_Click(object sender, RoutedEventArgs e)
+    {
+        var winget = WingetPath();
+        if (winget is null)
+        {
+            SetStatus("WinGet is unavailable. Docker Desktop installation did not start.", false);
+            return;
+        }
+        var answer = MessageBox.Show(this,
+            "Docker Desktop requires system components and may request native administrator consent. Setup will not restart this computer. Continue to the official WinGet package installation?",
+            "Install Docker Desktop", MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.No);
+        if (answer != MessageBoxResult.Yes) return;
+        _operationRunning = true;
+        CancelButton.Content = "Cancel install";
+        BackButton.IsEnabled = false;
+        SetStatus("Starting the official Docker Desktop package through native consent.", false);
+        try
+        {
+            var start = new ProcessStartInfo(winget)
+            {
+                UseShellExecute = true,
+                Verb = "runas",
+                Arguments = "install --exact --id Docker.DockerDesktop --source winget --accept-package-agreements --accept-source-agreements",
+                WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+            };
+            using var process = Process.Start(start) ?? throw new InvalidOperationException("WinGet did not start.");
+            await process.WaitForExitAsync();
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"WinGet returned exit code {process.ExitCode}. Any prior installation remains untouched.");
+            SetStatus("Package installer completed. Checking for an available engine; complete any requested setup manually.", false);
+            await Task.Delay(1000);
+            _operationRunning = false;
+            CancelButton.Content = "Cancel";
+            RenderStep();
+            await ProbeDockerAsync();
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            _operationRunning = false;
+            CancelButton.Content = "Cancel";
+            SetStatus("Native consent was cancelled. Docker Desktop was not installed by this attempt; setup remains incomplete.", false);
+        }
+        catch (Exception ex)
+        {
+            _operationRunning = false;
+            CancelButton.Content = "Cancel";
+            SetStatus("Docker Desktop installation did not complete: " + ex.Message, false);
+        }
+        await SaveStateAsync();
+    }
+
+    private async void StartInstall_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_state.StartConfirmed || !_state.DockerReady || !_state.ManifestAvailable) return;
+        if (!ValidatePort(out var portError)) { SetStatus(portError, false); _step = 1; RenderStep(); return; }
+        _state.HostPort = ParsePort();
+        _state.LastStep = 5;
+        _step = 5;
+        _operationCancellation = new CancellationTokenSource();
+        _operationRunning = true;
+        CancelButton.Content = "Cancel operation";
+        NextButton.Visibility = Visibility.Collapsed;
+        BackButton.IsEnabled = false;
+        RenderStep();
+        await SaveStateAsync();
+        try
+        {
+            await PerformInstallAsync(_operationCancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            await RecordFailureAsync("Setup operation cancelled. The assistant did not remove or stop any started container. Review the actual Docker service state before retrying.");
+        }
+        catch (Exception ex)
+        {
+            await RecordFailureAsync(ex.Message);
+        }
+        finally
+        {
+            _operationRunning = false;
+            _operationCancellation?.Dispose();
+            _operationCancellation = null;
+            CancelButton.Content = "Cancel";
+            CancelButton.IsEnabled = true;
+            if (_finishButton is not null) _finishButton.IsEnabled = true;
+            RenderStep();
+            if (_state.InstallationVerified) SetStatus("Service health is verified. The service remains running after this assistant closes.", true);
+            else SetStatus(_state.LastOperationSummary ?? "Setup remains incomplete.", false);
+            await SaveStateAsync();
+        }
+    }
+
+    private async Task PerformInstallAsync(CancellationToken cancellationToken)
+    {
+        await EnsureManifestAsync(cancellationToken);
+        Report("Release manifest validated against the normal public release.");
+        var compose = await DownloadComposeAsync(cancellationToken);
+        Report("Compose file downloaded from source revision " + _state.SourceSha + ".");
+        Directory.CreateDirectory(_state.ComposeDirectory);
+        Directory.CreateDirectory(_state.StorageDirectory);
+        var composePath = Path.Combine(_state.ComposeDirectory, "compose.yaml");
+        await File.WriteAllTextAsync(composePath, compose, new UTF8Encoding(false), cancellationToken);
+        var secretDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ding-Ding-Projects", "WatchdogControlSetup", "secrets");
+        CreateProtectedSecretDirectory(secretDirectory);
+        _pairingCode = _state.PairingCodeShown ? string.Empty : File.Exists(Path.Combine(secretDirectory, "watchdog_pairing_code")) ? await File.ReadAllTextAsync(Path.Combine(secretDirectory, "watchdog_pairing_code"), cancellationToken) : CreatePairingCode();
+        _pairingPath = Path.Combine(secretDirectory, "watchdog_pairing_code");
+        if (_pairingCode.Length > 0 && !File.Exists(_pairingPath)) await WriteProtectedFileAsync(_pairingPath, _pairingCode, cancellationToken);
+        _agentEnrollmentPath = Path.Combine(secretDirectory, "watchdog_agent_enrollment_code");
+        if (!File.Exists(_agentEnrollmentPath)) await WriteProtectedFileAsync(_agentEnrollmentPath, CreatePairingCode(), cancellationToken);
+        var tls = await CreateTlsMaterialAsync(secretDirectory, cancellationToken);
+        _certificatePath = tls.PfxPath;
+        _certificatePasswordPath = tls.PasswordPath;
+        _publicCertificatePath = tls.PublicCertificatePath;
+        _certificateFingerprint = tls.Fingerprint;
+        _state.CertificateFingerprint = tls.Fingerprint;
+        _state.PublicCertificatePath = tls.PublicCertificatePath;
+        _state.ComposePath = composePath;
+        await SaveStateAsync();
+        Report("Selected data and setup folders are ready. Existing contents were preserved.");
+
+        var environment = new Dictionary<string, string?>
+        {
+            ["WATCHDOG_IMAGE"] = _state.ImageReference,
+            ["WATCHDOG_HOST_PORT"] = _state.HostPort.ToString(),
+            ["WATCHDOG_DATA_PATH"] = _state.StorageDirectory,
+            ["WATCHDOG_PAIRING_CODE_HOST_FILE"] = _pairingPath,
+            ["WATCHDOG_TLS_CERTIFICATE_HOST_FILE"] = _certificatePath,
+            ["WATCHDOG_TLS_PASSWORD_HOST_FILE"] = _certificatePasswordPath,
+            ["WATCHDOG_AGENT_ENROLLMENT_CODE_HOST_FILE"] = _agentEnrollmentPath,
+        };
+        var baseArgs = new List<string> { "compose", "-p", "watchdog-control", "-f", composePath };
+        Report("Validating the rendered Compose configuration before pulling the image.");
+        var config = await RunDockerAsync([.. baseArgs, "config", "--quiet"], environment, cancellationToken);
+        if (config.ExitCode != 0) throw new InvalidOperationException("Compose configuration validation failed: " + SafeSummary(config.StandardError));
+        Report("Compose configuration validation completed.");
+        Report("Pulling the exact digest-pinned image. This can take several minutes.");
+        List<string> pullArgs = [.. baseArgs, "pull", "watchdog"];
+        var pull = await RunDockerAsync(pullArgs, environment, cancellationToken);
+        if (pull.ExitCode != 0) throw new InvalidOperationException("Image pull failed: " + SafeSummary(pull.StandardError));
+        Report("Image pull completed.");
+        Report("Starting the named Watchdog Control service. No other Compose project is modified.");
+        var up = await RunDockerAsync([.. baseArgs, "up", "-d", "watchdog"], environment, cancellationToken);
+        if (up.ExitCode != 0) throw new InvalidOperationException("Service start failed: " + SafeSummary(up.StandardError));
+        _state.ServiceStarted = true;
+        await SaveStateAsync();
+        Report("Service start command completed. Waiting up to 90 seconds for HTTPS /health.");
+        await WaitForHealthAsync(cancellationToken);
+        Report("Pinned-certificate HTTPS loopback health check succeeded.");
+        var address = await VerifyLanAddressAsync(cancellationToken);
+        if (address is null)
+        {
+            _state.InstallationVerified = false;
+            _state.LastOperationSummary = "The service passed its loopback health check, but no LAN address returned a successful health response. The service remains running. Check host firewall and network binding, then retry verification.";
+            throw new InvalidOperationException(_state.LastOperationSummary);
+        }
+        _state.LanUrl = address;
+        _state.InstallationVerified = true;
+        if (_state.ManageThisComputer)
+            await InstallAgentAsync(cancellationToken);
+        _state.LastOperationSummary = "Compose start and health checks completed on this host. Remote LAN-client reachability still requires a separate device check.";
+        _state.LastStep = 5;
+    }
+
+    private async Task InstallAgentAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var agentPath = await DownloadAgentAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var start = new ProcessStartInfo(agentPath) { UseShellExecute = true, Verb = "runas", WorkingDirectory = _state.ComposeDirectory };
+            start.ArgumentList.Add("install");
+            start.ArgumentList.Add("--controller-url");
+            start.ArgumentList.Add(_state.LanUrl!);
+            start.ArgumentList.Add("--certificate-sha256");
+            start.ArgumentList.Add(_certificateFingerprint);
+            start.ArgumentList.Add("--enrollment-code-file");
+            start.ArgumentList.Add(_agentEnrollmentPath);
+            Report("Requesting native administrator consent to install the Watchdog Control service for this computer.");
+            using var process = Process.Start(start) ?? throw new InvalidOperationException("The Windows agent installer did not start.");
+            await process.WaitForExitAsync();
+            if (process.ExitCode != 0) throw new InvalidOperationException($"The agent installer returned exit code {process.ExitCode}.");
+            if (File.Exists(_agentEnrollmentPath)) File.Delete(_agentEnrollmentPath);
+            _state.AgentStatus = "Installed. The host agent enrolled over the fingerprint-pinned HTTPS controller connection.";
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            _state.AgentStatus = "Pending. Native administrator consent was cancelled. The Watchdog Control dashboard remains installed and running.";
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _state.AgentStatus = "Pending. Setup was cancelled during host-agent installation. The dashboard remains installed and running.";
+        }
+        catch (Exception ex)
+        {
+            _state.AgentStatus = "Pending. " + SafeSummary(ex.Message) + " The dashboard remains installed and running.";
+        }
+        await SaveStateAsync();
+    }
+
+    private async void RetryAgent_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_state.LanUrl) || string.IsNullOrWhiteSpace(_certificateFingerprint)) return;
+        if (!File.Exists(_agentEnrollmentPath))
+        {
+            SetStatus("The enrollment code is unavailable. Retry the full setup to create a fresh code and restart the dashboard with it.", false);
+            return;
+        }
+        _retryAgentButton!.IsEnabled = false;
+        await InstallAgentAsync(CancellationToken.None);
+        RenderStep();
+        SetStatus(_state.AgentStatus ?? "Computer management remains pending.", _state.AgentStatus?.StartsWith("Installed", StringComparison.Ordinal) == true);
+    }
+
+    private async Task<string> DownloadAgentAsync(CancellationToken cancellationToken)
+    {
+        using var releaseResponse = await Http.GetAsync($"https://api.github.com/repos/{OwnerRepository}/releases/latest", cancellationToken);
+        releaseResponse.EnsureSuccessStatusCode();
+        using var document = await JsonDocument.ParseAsync(await releaseResponse.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+        var root = document.RootElement;
+        if (ReadBool(root, "draft") || ReadBool(root, "prerelease") || ReadString(root, "tag_name") != _state.ReleaseTag) throw new InvalidDataException("The normal release changed while setup was running.");
+        var asset = root.GetProperty("assets").EnumerateArray().FirstOrDefault(a => ReadString(a, "name") == "watchdog-agent-win-x64.exe");
+        var url = ReadString(asset, "browser_download_url");
+        var digest = ReadString(asset, "digest");
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Host != "github.com" || !uri.AbsolutePath.EndsWith($"/releases/download/{_state.ReleaseTag}/watchdog-agent-win-x64.exe", StringComparison.Ordinal) || !Regex.IsMatch(digest, "^sha256:[0-9a-f]{64}$", RegexOptions.CultureInvariant)) throw new InvalidDataException("The release has no Windows agent asset with a SHA-256 digest.");
+        using var response = await Http.GetAsync(uri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        if (bytes.Length is 0 or > 128 * 1024 * 1024) throw new InvalidDataException("The Windows agent asset size is outside the accepted bound.");
+        var actual = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        if (!string.Equals(actual, digest[7..], StringComparison.Ordinal)) throw new InvalidDataException("The Windows agent asset SHA-256 does not match release metadata.");
+        var path = Path.Combine(_state.ComposeDirectory, "watchdog-agent-win-x64.exe");
+        await File.WriteAllBytesAsync(path, bytes, cancellationToken);
+        return path;
+    }
+
+    private async Task EnsureManifestAsync(CancellationToken cancellationToken)
+    {
+        SetOperationProgress("Finding the latest normal Watchdog Control release…");
+        using var response = await Http.GetAsync($"https://api.github.com/repos/{OwnerRepository}/releases/latest", cancellationToken);
+        response.EnsureSuccessStatusCode();
+        using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+        var root = document.RootElement;
+        if (ReadBool(root, "draft") || ReadBool(root, "prerelease")) throw new InvalidDataException("The latest release is a draft or prerelease; setup requires a normal published release.");
+        var tag = ReadString(root, "tag_name");
+        if (!Regex.IsMatch(tag, "^[A-Za-z0-9._-]{1,80}$", RegexOptions.CultureInvariant)) throw new InvalidDataException("The release tag is missing or malformed.");
+        if (!root.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array) throw new InvalidDataException("The release has no readable assets list.");
+        var manifestAsset = assets.EnumerateArray().FirstOrDefault(a => string.Equals(ReadString(a, "name"), ManifestAssetName, StringComparison.Ordinal));
+        var manifestUrl = ReadString(manifestAsset, "browser_download_url");
+        var manifestDigest = ReadString(manifestAsset, "digest");
+        if (!Uri.TryCreate(manifestUrl, UriKind.Absolute, out var manifestUri) || manifestUri.Host != "github.com" || !manifestUri.AbsolutePath.EndsWith($"/releases/download/{tag}/{ManifestAssetName}", StringComparison.Ordinal)) throw new InvalidDataException("The release is missing its official image manifest asset.");
+        if (!Regex.IsMatch(manifestDigest, "^sha256:[0-9a-f]{64}$", RegexOptions.CultureInvariant)) throw new InvalidDataException("The release manifest asset has no valid SHA-256 digest.");
+        using var manifestResponse = await Http.GetAsync(manifestUri, cancellationToken);
+        manifestResponse.EnsureSuccessStatusCode();
+        var raw = await manifestResponse.Content.ReadAsByteArrayAsync(cancellationToken);
+        if (raw.Length is 0 or > 32 * 1024) throw new InvalidDataException("The release manifest size is outside the accepted bound.");
+        if (!string.Equals(Convert.ToHexString(SHA256.HashData(raw)).ToLowerInvariant(), manifestDigest[7..], StringComparison.Ordinal)) throw new InvalidDataException("The release manifest asset SHA-256 does not match GitHub release metadata.");
+        using var manifest = JsonDocument.Parse(raw);
+        var manifestRoot = manifest.RootElement;
+        var schema = ReadInt(manifestRoot, "schemaVersion");
+        var sourceSha = ReadString(manifestRoot, "sourceCommit");
+        var version = ReadString(manifestRoot, "version");
+        var imageNode = manifestRoot.GetProperty("image");
+        var serviceNode = manifestRoot.GetProperty("service");
+        var tlsNode = manifestRoot.GetProperty("tls");
+        var image = ReadString(imageNode, "reference");
+        var archive = ReadString(imageNode, "archiveAsset");
+        var archiveHash = ReadString(imageNode, "archiveSha256");
+        var serviceName = ReadString(serviceNode, "name");
+        var port = ReadInt(serviceNode, "containerPort");
+        var healthPath = ReadString(serviceNode, "healthPath");
+        var dataPath = ReadString(serviceNode, "dataPath");
+        var tlsCertPath = ReadString(tlsNode, "certificateFile");
+        var tlsPasswordPath = ReadString(tlsNode, "passwordFile");
+        var pairingCodePath = ReadString(serviceNode, "pairingCodeFile");
+        var agentEnrollmentPath = ReadString(serviceNode, "agentEnrollmentCodeFile");
+        if (schema != 1 || !Regex.IsMatch(sourceSha, "^[0-9a-f]{40}$", RegexOptions.CultureInvariant)) throw new InvalidDataException("The release manifest schema or source revision is invalid.");
+        if (!string.Equals(version, tag, StringComparison.Ordinal)) throw new InvalidDataException("The release tag does not match the manifest version.");
+        await VerifyReleaseSourceShaAsync(tag, sourceSha, cancellationToken);
+        if (!Regex.IsMatch(image, "^" + Regex.Escape(ImagePrefix) + "[0-9a-f]{64}$", RegexOptions.CultureInvariant)) throw new InvalidDataException("The release manifest does not contain the required immutable image digest.");
+        if (archive != "watchdog-control-image-linux-amd64.tar" || !Regex.IsMatch(archiveHash, "^[0-9a-f]{64}$", RegexOptions.CultureInvariant)) throw new InvalidDataException("The release image archive name or SHA-256 is invalid.");
+        if (serviceName != "watchdog" || port != 8443 || healthPath != "/health" || dataPath != "/var/lib/watchdog-control") throw new InvalidDataException("The manifest service contract does not match this setup wizard.");
+        if (tlsCertPath != "/run/secrets/watchdog_tls_certificate" || tlsPasswordPath != "/run/secrets/watchdog_tls_password" || pairingCodePath != "/run/secrets/watchdog_pairing_code") throw new InvalidDataException("The manifest protected secret paths do not match this setup wizard.");
+        if (agentEnrollmentPath != "/run/secrets/watchdog_agent_enrollment_code") throw new InvalidDataException("The manifest host-agent enrollment secret path does not match this setup wizard.");
+        _state.ReleaseTag = tag;
+        _state.SourceSha = sourceSha;
+        _state.ImageReference = image;
+        _state.ManifestAvailable = true;
+        _state.ManifestUnavailableReason = null;
+        await SaveStateAsync();
+    }
+
+    private static async Task VerifyReleaseSourceShaAsync(string tag, string manifestSourceSha, CancellationToken cancellationToken)
+    {
+        var referenceUrl = $"https://api.github.com/repos/{OwnerRepository}/git/ref/tags/{Uri.EscapeDataString(tag)}";
+        using var referenceResponse = await Http.GetAsync(referenceUrl, cancellationToken);
+        referenceResponse.EnsureSuccessStatusCode();
+        using var reference = await JsonDocument.ParseAsync(await referenceResponse.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+        var target = reference.RootElement.GetProperty("object");
+        var targetSha = ReadString(target, "sha");
+        var targetType = ReadString(target, "type");
+        for (var depth = 0; targetType == "tag" && depth < 3; depth++)
+        {
+            using var tagResponse = await Http.GetAsync($"https://api.github.com/repos/{OwnerRepository}/git/tags/{targetSha}", cancellationToken);
+            tagResponse.EnsureSuccessStatusCode();
+            using var tagDocument = await JsonDocument.ParseAsync(await tagResponse.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+            target = tagDocument.RootElement.GetProperty("object");
+            targetSha = ReadString(target, "sha");
+            targetType = ReadString(target, "type");
+        }
+        if (targetType != "commit" || !Regex.IsMatch(targetSha, "^[0-9a-f]{40}$", RegexOptions.CultureInvariant) || !string.Equals(targetSha, manifestSourceSha, StringComparison.Ordinal))
+            throw new InvalidDataException("The release tag target does not match the manifest source commit.");
+    }
+
+    private async Task<string> DownloadComposeAsync(CancellationToken cancellationToken)
+    {
+        var uri = new Uri($"https://raw.githubusercontent.com/{OwnerRepository}/{_state.SourceSha}/compose.yaml");
+        using var response = await Http.GetAsync(uri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        if (bytes.Length is 0 or > 64 * 1024) throw new InvalidDataException("The release Compose file is empty or exceeds 64 KiB.");
+        var text = new UTF8Encoding(false, true).GetString(bytes);
+        if (!text.Contains("watchdog:", StringComparison.Ordinal) ||
+            !text.Contains("${WATCHDOG_IMAGE", StringComparison.Ordinal) ||
+            !text.Contains("WATCHDOG_HOST_PORT", StringComparison.Ordinal) ||
+            !text.Contains(":8443", StringComparison.Ordinal) ||
+            !text.Contains("WATCHDOG_DATA_PATH", StringComparison.Ordinal) ||
+            !text.Contains("WATCHDOG_PAIRING_CODE_FILE", StringComparison.Ordinal) ||
+            !text.Contains("WATCHDOG_TLS_CERTIFICATE_FILE", StringComparison.Ordinal) ||
+            !text.Contains("WATCHDOG_TLS_CERTIFICATE_PASSWORD_FILE", StringComparison.Ordinal) ||
+            !text.Contains("WATCHDOG_AGENT_ENROLLMENT_CODE_FILE", StringComparison.Ordinal) ||
+            !text.Contains("/run/secrets/watchdog_pairing_code", StringComparison.Ordinal) ||
+            !text.Contains("/run/secrets/watchdog_tls_certificate", StringComparison.Ordinal) ||
+            !text.Contains("/run/secrets/watchdog_tls_password", StringComparison.Ordinal) ||
+            !text.Contains("/run/secrets/watchdog_agent_enrollment_code", StringComparison.Ordinal) ||
+            !text.Contains("/health", StringComparison.Ordinal))
+            throw new InvalidDataException("The source-pinned Compose file is missing the required watchdog service, digest, port, data, or health configuration.");
+        if (text.Contains("container_name:", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("The release Compose file sets a global container name and cannot be used safely beside other projects.");
+        return text;
+    }
+
+    private async Task WaitForHealthAsync(CancellationToken cancellationToken)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(90);
+        var attempt = 0;
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            attempt++;
+            SetOperationProgress($"Waiting for service health… check {attempt}, up to 90 seconds.");
+            try
+            {
+                using var client = CreatePinnedClient();
+                using var response = await client.GetAsync($"https://127.0.0.1:{_state.HostPort}/health", cancellationToken);
+                if (response.IsSuccessStatusCode) return;
+                Report($"Health endpoint returned HTTP {(int)response.StatusCode}.");
+            }
+            catch (HttpRequestException) { }
+            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested) { }
+            await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
+        }
+        throw new TimeoutException("The service did not return a successful HTTPS /health response within 90 seconds. It may still be running; no automatic removal was attempted.");
+    }
+
+    private async Task<string?> VerifyLanAddressAsync(CancellationToken cancellationToken)
+    {
+        var addresses = NetworkInterface.GetAllNetworkInterfaces()
+            .Where(n => n.OperationalStatus == OperationalStatus.Up && n.NetworkInterfaceType is not NetworkInterfaceType.Loopback and not NetworkInterfaceType.Tunnel)
+            .SelectMany(n => n.GetIPProperties().UnicastAddresses)
+            .Select(a => a.Address)
+            .Where(a => a.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(a) && !a.ToString().StartsWith("169.254.", StringComparison.Ordinal))
+            .Distinct().ToArray();
+        foreach (var ip in addresses)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var client = CreatePinnedClient();
+            try
+            {
+                using var response = await client.GetAsync($"https://{ip}:{_state.HostPort}/health", cancellationToken);
+                if (response.IsSuccessStatusCode) return $"https://{ip}:{_state.HostPort}/";
+            }
+            catch (HttpRequestException) { }
+            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested) { }
+        }
+        return null;
+    }
+
+    private HttpClient CreatePinnedClient()
+    {
+        var expected = _certificateFingerprint.Replace(":", string.Empty, StringComparison.Ordinal).ToUpperInvariant();
+        var handler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (_, certificate, _, errors) =>
+                certificate is not null &&
+                string.Equals(Convert.ToHexString(certificate.GetCertHash(HashAlgorithmName.SHA256)), expected, StringComparison.Ordinal) &&
+                (errors == System.Net.Security.SslPolicyErrors.None || errors == System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors)
+        };
+        return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(4) };
+    }
+
+    private static string CreatePairingCode()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(32);
+        return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    private static async Task WriteProtectedFileAsync(string path, string value, CancellationToken cancellationToken)
+    {
+        CreateProtectedSecretDirectory(Path.GetDirectoryName(path)!);
+        await File.WriteAllTextAsync(path, value, new UTF8Encoding(false), cancellationToken);
+    }
+
+    private static void CreateProtectedSecretDirectory(string path)
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("Protected secret files require the supported Windows host.");
+        var security = new DirectorySecurity();
+        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+        foreach (var sid in new[]
+                 {
+                     WindowsIdentity.GetCurrent().User!,
+                     new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
+                     new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null)
+                 })
+            security.AddAccessRule(new FileSystemAccessRule(sid, FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+        Directory.CreateDirectory(path);
+        new DirectoryInfo(path).SetAccessControl(security);
+    }
+
+    private static async Task<TlsMaterial> CreateTlsMaterialAsync(string secretDirectory, CancellationToken cancellationToken)
+    {
+        var pfxPath = Path.Combine(secretDirectory, "watchdog_tls_certificate.pfx");
+        var passwordPath = Path.Combine(secretDirectory, "watchdog_tls_password");
+        var publicPath = Path.Combine(secretDirectory, "watchdog_tls_certificate.cer");
+        var fingerprintPath = Path.Combine(secretDirectory, "watchdog_tls_fingerprint.txt");
+        string password;
+        X509Certificate2 certificate;
+        if (File.Exists(pfxPath) && File.Exists(passwordPath))
+        {
+            password = await File.ReadAllTextAsync(passwordPath, cancellationToken);
+            certificate = X509CertificateLoader.LoadPkcs12FromFile(pfxPath, password, X509KeyStorageFlags.EphemeralKeySet);
+        }
+        else
+        {
+            var lanAddresses = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(n => n.OperationalStatus == OperationalStatus.Up && n.NetworkInterfaceType is not NetworkInterfaceType.Loopback and not NetworkInterfaceType.Tunnel)
+                .SelectMany(n => n.GetIPProperties().UnicastAddresses).Select(a => a.Address)
+                .Where(a => a.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(a) && !a.ToString().StartsWith("169.254.", StringComparison.Ordinal))
+                .Distinct().ToArray();
+            using var rsa = RSA.Create(3072);
+            var request = new CertificateRequest("CN=Watchdog Control", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            request.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, true));
+            request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, true));
+            var enhanced = new OidCollection { new("1.3.6.1.5.5.7.3.1") };
+            request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(enhanced, true));
+            var san = new SubjectAlternativeNameBuilder();
+            san.AddDnsName("localhost");
+            san.AddDnsName(Environment.MachineName);
+            san.AddIpAddress(IPAddress.Loopback);
+            foreach (var address in lanAddresses) san.AddIpAddress(address);
+            request.CertificateExtensions.Add(san.Build());
+            certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddYears(1));
+            password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(36));
+            await File.WriteAllBytesAsync(pfxPath, certificate.Export(X509ContentType.Pfx, password), cancellationToken);
+            await WriteProtectedFileAsync(passwordPath, password, cancellationToken);
+            await File.WriteAllBytesAsync(publicPath, certificate.Export(X509ContentType.Cert), cancellationToken);
+            await File.WriteAllTextAsync(fingerprintPath, Convert.ToHexString(certificate.GetCertHash(HashAlgorithmName.SHA256)), new UTF8Encoding(false), cancellationToken);
+        }
+        if (!File.Exists(publicPath)) await File.WriteAllBytesAsync(publicPath, certificate.Export(X509ContentType.Cert), cancellationToken);
+        var fingerprint = Convert.ToHexString(certificate.GetCertHash(HashAlgorithmName.SHA256));
+        if (!File.Exists(fingerprintPath)) await File.WriteAllTextAsync(fingerprintPath, fingerprint, new UTF8Encoding(false), cancellationToken);
+        certificate.Dispose();
+        return new TlsMaterial(pfxPath, passwordPath, publicPath, fingerprint);
+    }
+
+    private sealed record TlsMaterial(string PfxPath, string PasswordPath, string PublicCertificatePath, string Fingerprint);
+
+    private Task<CommandResult> RunDockerAsync(IReadOnlyList<string> arguments, IReadOnlyDictionary<string, string?> environment, CancellationToken cancellationToken)
+    {
+        return CommandRunner.RunAsync("docker", arguments, _state.ComposeDirectory, environment, CommandTimeout, cancellationToken, Report, string.Empty);
+    }
+
+    private async Task RecordFailureAsync(string reason)
+    {
+        _state.InstallationVerified = false;
+        _state.LastOperationSummary = reason;
+        Report(reason);
+        await SaveStateAsync();
+    }
+
+    private async void BrowseStorage_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog { Title = "Choose the persistent Watchdog Control data folder", InitialDirectory = Directory.Exists(_state.StorageDirectory) ? _state.StorageDirectory : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) };
+        if (dialog.ShowDialog(this) != true) return;
+        _state.StorageDirectory = Path.GetFullPath(dialog.FolderName);
+        _storageBox!.Text = _state.StorageDirectory;
+        await SaveStateAsync();
+    }
+
+    private void Next_Click(object sender, RoutedEventArgs e)
+    {
+        if (_step == 1)
+        {
+            if (!ValidatePort(out var message)) { SetStatus(message, false); return; }
+            _state.HostPort = ParsePort();
+            if (string.IsNullOrWhiteSpace(_state.StorageDirectory)) _state.StorageDirectory = DefaultStoragePath();
+            _state.LastStep = 2;
+            _step = 2;
+            _ = SaveStateAsync();
+            RenderStep();
+            _ = ProbeDockerAsync();
+            return;
+        }
+        if (_step == 2 && !_state.DockerReady) { SetStatus("Complete Docker Engine and Compose setup before continuing.", false); return; }
+        if (_step == 3)
+        {
+            _state.LastStep = 4;
+            _step = 4;
+            _ = SaveStateAsync();
+            RenderStep();
+            return;
+        }
+        if (_step == 4 && (!_state.ManifestAvailable || !_state.DockerReady)) { SetStatus("A normal release with a valid immutable-image manifest and a reachable Docker engine are required.", false); return; }
+        if (_step < 4)
+        {
+            _step++;
+            _state.LastStep = _step;
+            _ = SaveStateAsync();
+            RenderStep();
+            if (_step == 2) _ = ProbeDockerAsync();
+        }
+    }
+
+    private void Back_Click(object sender, RoutedEventArgs e)
+    {
+        if (_operationRunning)
+        {
+            if (_step == 5) _operationCancellation?.Cancel();
+            return;
+        }
+        if (_step <= 0) return;
+        if (_step == 5)
+        {
+            _step = 4;
+            _state.LastStep = 4;
+            RenderStep();
+            _ = SaveStateAsync();
+            return;
+        }
+        _step--;
+        _state.LastStep = _step;
+        RenderStep();
+        _ = SaveStateAsync();
+    }
+
+    private void Cancel_Click(object sender, RoutedEventArgs e)
+    {
+        if (_operationRunning)
+        {
+            _operationCancellation?.Cancel();
+            SetStatus("Cancellation requested. A completed service start is left running.", false);
+            return;
+        }
+        Close();
+    }
+
+    private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (!_operationRunning) return;
+        e.Cancel = true;
+        _operationCancellation?.Cancel();
+        SetStatus("Cancellation requested. The window will close after the active setup command returns.", false);
+    }
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (Keyboard.Modifiers == ModifierKeys.Alt && e.Key == Key.Left) { Back_Click(this, new RoutedEventArgs()); e.Handled = true; }
+        else if (Keyboard.Modifiers == ModifierKeys.Alt && e.Key == Key.Right && NextButton.Visibility == Visibility.Visible && NextButton.IsEnabled) { Next_Click(this, new RoutedEventArgs()); e.Handled = true; }
+    }
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2) Maximize_Click(sender, e);
+        else if (e.ButtonState == MouseButtonState.Pressed) DragMove();
+    }
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    private void Maximize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void RefreshReview()
+    {
+        if (_reviewDetails is not null)
+        {
+            _reviewDetails.Text = $"Docker context: {_state.DockerContext ?? "not checked"}\nRelease: {_state.ReleaseTag ?? "not available"}\nSource: {_state.SourceSha ?? "not available"}\nImage: {_state.ImageReference ?? "not available"}\nHTTPS endpoint: https://localhost:{_state.HostPort}/\nPersistent data: {_state.StorageDirectory}\nCompose project: watchdog-control";
+        }
+        if (_startInstallButton is not null) _startInstallButton.IsEnabled = _state.StartConfirmed && _state.ManifestAvailable && _state.DockerReady;
+    }
+
+    private void AddReleaseStatus()
+    {
+        var message = _state.ManifestAvailable
+            ? $"Release {_state.ReleaseTag} is available, with source {_state.SourceSha} and a digest-pinned image."
+            : "Image availability has not been confirmed. Setup will fetch a public normal release manifest before it changes the selected Docker host.";
+        AddCallout("Release source", _state.ManifestUnavailableReason ?? message, "Package");
+    }
+
+    private void Report(string line)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            if (_operationOutput is not null) _operationOutput.Text = (string.IsNullOrEmpty(_operationOutput.Text) ? string.Empty : _operationOutput.Text + Environment.NewLine) + line;
+            SetStatus(line, false);
+        });
+    }
+
+    private void SetOperationProgress(string message) => Dispatcher.Invoke(() => { if (_operationOutput is not null) _operationOutput.Text = (string.IsNullOrEmpty(_operationOutput.Text) ? string.Empty : _operationOutput.Text + Environment.NewLine) + message; });
+
+    private void SetStatus(string message, bool good)
+    {
+        StatusText.Text = message;
+        StatusDot.Fill = good ? new SolidColorBrush(Color.FromRgb(34, 150, 103)) : new SolidColorBrush(Color.FromRgb(96, 112, 138));
+    }
+
+    private async Task SaveStateAsync() => await _stateStore.SaveAsync(_state);
+
+    private bool ValidatePort(out string message)
+    {
+        var port = ParsePort();
+        if (port is < 1024 or > 65535) { message = "Choose a host port from 1024 to 65535."; return false; }
+        try
+        {
+            using var listener = new TcpListener(IPAddress.Any, port);
+            listener.Start(); listener.Stop();
+        }
+        catch (SocketException) { message = $"Port {port} is already in use on this host. Choose another port."; return false; }
+        message = string.Empty;
+        return true;
+    }
+
+    private int ParsePort()
+    {
+        var value = _portBox?.Text ?? _state.HostPort.ToString();
+        return int.TryParse(value, out var port) ? port : -1;
+    }
+
+    private static string DefaultStoragePath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WatchdogControl", "data");
+    private static string? WingetPath()
+    {
+        var path = Environment.GetEnvironmentVariable("PATH")?.Split(Path.PathSeparator).Select(p => Path.Combine(p.Trim('"'), "winget.exe")).FirstOrDefault(File.Exists);
+        if (path is not null) return path;
+        var appAlias = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "WindowsApps", "winget.exe");
+        return File.Exists(appAlias) ? appAlias : null;
+    }
+    private static HttpClient CreateHttpClient()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("WatchdogControlSetup/0.1.0");
+        client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+        return client;
+    }
+    private static string ReadString(JsonElement node, string name) => node.ValueKind == JsonValueKind.Object && node.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : string.Empty;
+    private static bool ReadBool(JsonElement node, string name) => node.ValueKind == JsonValueKind.Object && node.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.True;
+    private static int ReadInt(JsonElement node, string name) => node.ValueKind == JsonValueKind.Object && node.TryGetProperty(name, out var value) && value.TryGetInt32(out var number) ? number : -1;
+    private static string SafeSummary(string? value)
+    {
+        var line = (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
+        return line.Length > 240 ? line[..240] : line;
+    }
+
+    private void AddEyebrow(string text)
+    {
+        var label = new TextBlock { Text = text, Foreground = new SolidColorBrush(Color.FromRgb(36, 88, 211)), FontWeight = FontWeights.Bold, FontSize = 12, Margin = new Thickness(0, 0, 0, 12) };
+        AutomationProperties.SetName(label, text);
+        PageHost.Children.Add(label);
+    }
+    private void AddHeading(string text) => PageHost.Children.Add(new TextBlock { Text = text, FontSize = 30, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 14), LineHeight = 38 });
+    private void AddBody(string text) => PageHost.Children.Add(new TextBlock { Text = text, FontSize = 14, Foreground = (Brush)FindResource("TextSecondary"), LineHeight = 22, Margin = new Thickness(0, 0, 0, 16) });
+    private void AddLabel(string label, string description)
+    {
+        PageHost.Children.Add(new TextBlock { Text = label, FontSize = 14, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4) });
+        PageHost.Children.Add(new TextBlock { Text = description, FontSize = 12, Foreground = (Brush)FindResource("TextSecondary") });
+    }
+    private Border NewCard()
+    {
+        var border = new Border { Background = new SolidColorBrush(Color.FromRgb(249, 250, 253)), BorderBrush = new SolidColorBrush(Color.FromRgb(228, 233, 242)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18), Margin = new Thickness(0, 12, 0, 12), Child = new StackPanel() };
+        return border;
+    }
+    private void AddCallout(string title, string message, string icon)
+    {
+        var card = NewCard();
+        var stack = (StackPanel)card.Child!;
+        stack.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, FontSize = 14, Margin = new Thickness(0, 0, 0, 7) });
+        stack.Children.Add(new TextBlock { Text = message, Foreground = (Brush)FindResource("TextSecondary"), FontSize = 13, LineHeight = 20 });
+        PageHost.Children.Add(card);
+    }
+
+    private void AddLinkCallout(string title, Uri address)
+    {
+        var card = NewCard();
+        var stack = (StackPanel)card.Child!;
+        stack.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, FontSize = 14, Margin = new Thickness(0, 0, 0, 7) });
+        var text = new TextBlock { FontSize = 13, TextWrapping = TextWrapping.Wrap };
+        var link = new Hyperlink(new Run(address.AbsoluteUri)) { NavigateUri = address };
+        link.RequestNavigate += (_, args) =>
+        {
+            Process.Start(new ProcessStartInfo(args.Uri.AbsoluteUri) { UseShellExecute = true });
+            args.Handled = true;
+        };
+        text.Inlines.Add(link);
+        stack.Children.Add(text);
+        PageHost.Children.Add(card);
+    }
+
+    private sealed record StepIndicator(Border Dot, TextBlock Title);
+}
+
+internal sealed class SetupState
+{
+    public int LastStep { get; set; }
+    public int HostPort { get; set; } = 8443;
+    public string StorageDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WatchdogControl", "data");
+    public string ComposeDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WatchdogControl", "service");
+    public string? ComposePath { get; set; }
+    public string? DockerContext { get; set; }
+    public string? DockerStatus { get; set; }
+    public bool DockerReady { get; set; }
+    public bool StartConfirmed { get; set; }
+    public bool ManifestAvailable { get; set; }
+    public string? ManifestUnavailableReason { get; set; }
+    public string? ReleaseTag { get; set; }
+    public string? SourceSha { get; set; }
+    public string? ImageReference { get; set; }
+    public bool ServiceStarted { get; set; }
+    public bool InstallationVerified { get; set; }
+    public bool PairingCodeShown { get; set; }
+    public bool ManageThisComputer { get; set; } = true;
+    public string? AgentStatus { get; set; }
+    public string? LanUrl { get; set; }
+    public string? CertificateFingerprint { get; set; }
+    public string? PublicCertificatePath { get; set; }
+    public string? LastOperationSummary { get; set; }
+}
+
+internal sealed class SetupStateStore
+{
+    private static readonly string StatePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ding-Ding-Projects", "WatchdogControlSetup", "progress.json");
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, MaxDepth = 8 };
+
+    public async Task<SetupState> LoadAsync()
+    {
+        if (!File.Exists(StatePath)) return new SetupState();
+        try
+        {
+            await using var input = File.OpenRead(StatePath);
+            if (input.Length > 32 * 1024) return new SetupState();
+            var state = await JsonSerializer.DeserializeAsync<SetupState>(input, JsonOptions);
+            return state ?? new SetupState();
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { return new SetupState(); }
+    }
+
+    public async Task SaveAsync(SetupState state)
+    {
+        var directory = Path.GetDirectoryName(StatePath)!;
+        Directory.CreateDirectory(directory);
+        var temp = StatePath + ".tmp";
+        await using (var output = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+            await JsonSerializer.SerializeAsync(output, state, JsonOptions);
+        File.Move(temp, StatePath, true);
+    }
+}
+
+internal sealed record CommandResult(int ExitCode, string StandardOutput, string StandardError);
+
+internal static class CommandRunner
+{
+    public static async Task<CommandResult> RunAsync(string fileName, IReadOnlyList<string> arguments, string? workingDirectory, IReadOnlyDictionary<string, string?>? environment, TimeSpan timeout, CancellationToken cancellationToken, Action<string>? progress, string redaction)
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(timeout);
+        var start = new ProcessStartInfo(fileName)
+        {
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+            WorkingDirectory = workingDirectory is not null && Directory.Exists(workingDirectory) ? workingDirectory : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        };
+        foreach (var argument in arguments) start.ArgumentList.Add(argument);
+        if (environment is not null) foreach (var pair in environment) start.Environment[pair.Key] = pair.Value;
+        using var process = new Process { StartInfo = start, EnableRaisingEvents = true };
+        try
+        {
+            if (!process.Start()) throw new InvalidOperationException("Docker command could not start.");
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
+        {
+            throw new InvalidOperationException("Docker CLI is not installed or is not on PATH.");
+        }
+        var stdout = new StringBuilder();
+        var stderr = new StringBuilder();
+        var outTask = ReadAsync(process.StandardOutput, stdout, progress, redaction, deadline.Token);
+        var errTask = ReadAsync(process.StandardError, stderr, progress, redaction, deadline.Token);
+        try { await process.WaitForExitAsync(deadline.Token); }
+        catch (OperationCanceledException)
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+            if (!cancellationToken.IsCancellationRequested) throw new TimeoutException($"The fixed Docker operation exceeded its {timeout.TotalSeconds:0}-second limit.");
+            throw;
+        }
+        await Task.WhenAll(outTask, errTask);
+        return new CommandResult(process.ExitCode, stdout.ToString(), stderr.ToString());
+    }
+
+    private static async Task ReadAsync(StreamReader reader, StringBuilder captured, Action<string>? progress, string redaction, CancellationToken cancellationToken)
+    {
+        while (await reader.ReadLineAsync(cancellationToken) is { } line)
+        {
+            var safe = line.Length > 800 ? line[..800] : line;
+            if (!string.IsNullOrEmpty(redaction)) safe = safe.Replace(redaction, "[redacted]", StringComparison.Ordinal);
+            if (captured.Length < 16 * 1024) captured.AppendLine(safe);
+            progress?.Invoke(safe);
+        }
+    }
+}
+
+internal static class BuildProvenance
+{
+    public static string ReadableLabel()
+    {
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "unavailable";
+        var buildTime = Environment.GetEnvironmentVariable("WATCHDOG_BUILD_UTC");
+        if (!DateTimeOffset.TryParse(buildTime, out var parsed)) return $"Version {version} · build time unavailable";
+        return $"Version {version} · built {parsed.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz}";
+    }
+}
