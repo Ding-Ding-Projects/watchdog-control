@@ -1,3 +1,4 @@
+import { hostingMode, tunnelSettings, liveHosting } from './hosting.js';
 import '@material/web/all.js';
 import './styles.css';
 import buildProvenance from '../build-provenance.json';
@@ -5,10 +6,10 @@ import buildProvenance from '../build-provenance.json';
 const steps = [
   ['Welcome', 'Release and scope'],
   ['Host settings', 'Port and persistent data'],
-  ['Prerequisites', 'Docker Engine and Compose'],
+  ['Prerequisites', 'Selected hosting runtime'],
   ['Service access', 'Pairing, TLS, optional agent'],
   ['Review', 'Confirm the destination'],
-  ['Install and verify', 'Pull, start, health check']
+  ['Install and verify', 'Start and verify access']
 ];
 
 const content = document.querySelector('#content-scroll');
@@ -81,13 +82,14 @@ function renderRail() {
 
 function renderWelcome() {
   content.append(heading('WATCHDOG CONTROL / SETUP', 'A clear path to a running service.', 'The assistant checks this computer, prepares the service, and verifies its health before calling setup complete.'));
-  content.append(card('What this setup will do', 'The automatic setup checks the selected local Docker context. If Docker Desktop is missing, it obtains the supported package manager, verifies its downloaded files, and starts the official Docker Desktop installer. After any first-run prompts, it downloads the exact release-matched Compose setup, pulls the immutable image, starts only the Watchdog Control service, then verifies HTTPS health and a LAN URL.'));
+  content.append(card('What this setup will do', 'Choose the bundled native Windows controller or Docker Compose. Native hosting needs no Docker installation. Both routes preserve authentication and HTTPS. You can opt into a free temporary public tunnel and protected Discord address notifications.'));
   content.append(card('What remains under your control', 'Windows may ask for native administrator consent, a package license, or first-run setup. Review those prompts yourself. If a computer restart is required, complete it manually and reopen this assistant to resume. Existing data and unrelated Docker projects are left in place.', 'warning'));
   const release = state?.release;
+  if (state?.hostingMode === 'native') content.append(card('Bundled native controller', 'The packaged self-contained controller runs as your current user. Its endpoint and management assets must pass verification before setup is ready.'));
   const releaseUnavailable = /HTTP 404\b/i.test(state?.releaseError || '')
     ? 'No normal product release is published yet. Setup will be available after the first verified release.'
     : state?.releaseError || 'A verified public release is not available yet. Setup cannot continue until its release manifest passes verification.';
-  content.append(card('Release source', release?.tag ? `Normal release ${release.tag}; source ${release.sourceSha}; immutable image ${release.image}` : releaseUnavailable, release?.tag ? 'success' : 'warning'));
+  if (state?.hostingMode === 'docker') content.append(card('Release source', release?.tag ? `Normal release ${release.tag}; source ${release.sourceSha}; immutable image ${release.image}` : releaseUnavailable, release?.tag ? 'success' : 'warning'));
   if (state?.progressRecoveryWarning) {
     content.append(card('Previous setup progress could not be read', `${state.progressRecoveryWarning} The original file will be copied and verified before the assistant starts a fresh record.`, 'warning'));
     const row = node('label', undefined, 'choice-row');
@@ -101,6 +103,7 @@ function renderWelcome() {
 
 function renderHostSettings() {
   content.append(heading('DESTINATION', 'Choose where the service will run.', 'These choices apply to this Watchdog Control service only.'));
+  content.append(hostingMode(state));
   const lan = document.createElement('md-outlined-select');
   lan.id = 'lan-bind-address';
   lan.label = 'Private LAN IPv4 interface';
@@ -163,10 +166,15 @@ function renderHostSettings() {
     content.append(row);
   }
   content.append(card('Data folder changes', 'Changing this choice does not migrate data. To continue an existing installation, select the folder that already contains its service data.', 'warning'));
-  content.append(card('Network scope', 'The Compose port is bound only to the selected private LAN interface. The assistant does not add a public-interface binding or change the host firewall.', 'info'));
+  content.append(card('Network scope', 'The HTTPS port is bound only to the selected private LAN interface. The assistant does not add a public-interface binding or change the host firewall.', 'info'));
 }
 
 function renderPrerequisites() {
+  if (state?.hostingMode === 'native') {
+    content.append(heading('NATIVE HOSTING', 'No Docker installation required.', 'The bundled self-contained controller and background supervisor run as your current Windows user.'));
+    content.append(card('Persistent runtime', 'Setup verifies and copies its bundled runtime into a versioned user-owned folder so hosting continues after this portable assistant closes. No global PATH change is needed.'));
+    return;
+  }
   content.append(heading('PREREQUISITES', 'Confirm this host is ready.', 'The assistant checks the Docker Engine and Compose plugin on the currently selected local context.'));
   content.append(card('Docker Engine and Compose', state?.docker?.message || 'Checking the local Docker context…', state?.docker?.ready ? 'success' : 'info'));
   const check = document.createElement('md-outlined-button');
@@ -183,6 +191,7 @@ function renderPrerequisites() {
 }
 
 function renderAccess() {
+  content.append(tunnelSettings(state, setToast));
   content.append(heading('SERVICE ACCESS', 'Protect the service from first start.', 'The assistant creates a one-time owner-pairing code and a local TLS certificate. It never collects an owner password.'));
   content.append(card('TLS trust', 'The service certificate contains the current LAN IPv4 addresses. After setup, export its public .cer file and import it through each client’s normal trust controls. The assistant checks the HTTPS hostname and the certificate fingerprint before reporting the LAN URL as ready.', 'info'));
   content.append(card('Owner pairing', 'The single-use pairing code is stored in a protected local file and shown once after setup. The service consumes it when the first owner account is created.', 'info'));
@@ -198,13 +207,13 @@ function renderAccess() {
 
 function renderReview() {
   content.append(heading('REVIEW', 'Confirm this computer and data location.', 'The install step checks the local engine again before writing configuration or starting the service.'));
-  content.append(card('Release', state?.release?.tag ? `${state.release.tag} · ${state.release.sourceSha} · ${state.release.image}` : 'No verified normal release is available.', state?.release?.tag ? 'success' : 'warning'));
-  content.append(card('Destination', `${state?.docker?.context || 'Local Docker context not verified'} · ${state?.lanBindAddress || 'No private LAN interface selected'} · HTTPS port ${state?.hostPort} · ${state?.storageDirectory || selectedStorage || 'No data folder selected'}`));
+  if (state?.hostingMode === 'docker') content.append(card('Release', state?.release?.tag ? `${state.release.tag} · ${state.release.sourceSha} · ${state.release.image}` : 'No verified normal release is available.', state?.release?.tag ? 'success' : 'warning'));
+  content.append(card('Destination', `${state?.hostingMode === 'native' ? 'Native Windows process' : state?.docker?.context || 'Local Docker context not verified'} · ${state?.lanBindAddress || 'No private LAN interface selected'} · HTTPS port ${state?.hostPort} · ${state?.storageDirectory || selectedStorage || 'No data folder selected'}`));
   const row = node('label', undefined, 'choice-row confirm-row');
   const confirm = document.createElement('md-checkbox');
   confirm.id = 'start-confirmation';
   confirm.checked = Boolean(state?.startConfirmed);
-  const label = node('span', `I reviewed this destination at ${state?.lanBindAddress || 'no private LAN address selected'} and authorize setup to install missing prerequisites, pull the release image, and start the Watchdog Control service.`);
+  const label = node('span', `I reviewed this destination at ${state?.lanBindAddress || 'no private LAN address selected'} and authorize the selected hosting method, its required runtime setup, and starting the Watchdog Control service.`);
   row.append(confirm, label);
   content.append(row);
   if (state?.manageThisComputer) {
@@ -220,9 +229,11 @@ function renderReview() {
 function renderOperation() {
   const interrupted = !operationRunning && !state?.verified && state?.summary === 'Setup started.';
   content.append(heading(state?.verified ? 'SETUP COMPLETE' : operationRunning ? 'INSTALL AND VERIFY' : 'SETUP NEEDS ATTENTION', state?.verified ? 'The service is running.' : operationRunning ? 'Preparing the Watchdog Control service.' : 'Review and resume setup.', state?.verified ? 'The service stays running after this assistant closes.' : operationRunning ? 'Progress is shown here. Cancelling does not remove a service or data that has already started.' : 'The assistant checks the current host again before continuing. Existing files and services remain in place.'));
+  content.append(liveHosting(state, setToast, () => { state.verified = false; step = 4; render(); }));
   if (state?.verified) {
+    content.append(tunnelSettings(state, setToast, true));
     content.append(card('Verified LAN address', state.lanUrl || 'Unavailable', state.lanUrl ? 'success' : 'warning'));
-    content.append(card('Release identity', `${state.release?.tag || 'unknown'} · ${state.release?.sourceSha || 'unknown'} · ${state.release?.image || 'unknown'}`));
+    if (state?.hostingMode === 'docker') content.append(card('Release identity', `${state.release?.tag || 'unknown'} · ${state.release?.sourceSha || 'unknown'} · ${state.release?.image || 'unknown'}`));
     content.append(card('TLS certificate SHA-256', state.certificateFingerprint || 'Unavailable'));
     const certificateButton = document.createElement('md-outlined-button');
     certificateButton.textContent = 'Export public certificate (.cer)';
@@ -307,6 +318,9 @@ async function persistSettings() {
   const confirmation = document.querySelector('#start-confirmation');
   const agentConsent = document.querySelector('#agent-consent');
   const patch = {
+    startupEnabled: document.querySelector('#startup-enabled')?.checked ?? state?.startupEnabled ?? false,
+    hostingMode: document.querySelector('#hosting-mode')?.value || state?.hostingMode || 'native',
+    tunnelEnabled: document.querySelector('#tunnel-enabled')?.checked ?? state?.tunnelEnabled ?? false,
     hostPort: portField ? Number(portField.value) : state?.hostPort,
     lanBindAddress: document.querySelector('#lan-bind-address')?.value || state?.lanBindAddress,
     storageDirectory: selectedStorage || state?.storageDirectory,
@@ -354,7 +368,7 @@ nextButton.addEventListener('click', async () => {
       return;
     }
   }
-  if (step === 2) {
+  if (step === 2 && state?.hostingMode === 'docker') {
     const result = await window.watchdogSetup.checkDocker();
     state.docker = result;
     if (!result.ready) status('Setup will install the prerequisite', result.message, 'warning');
@@ -463,3 +477,15 @@ render();
 window.addEventListener('resize', () => document.body.classList.toggle('compact', window.innerWidth < 900));
 window.addEventListener('dragover', (event) => event.preventDefault());
 window.addEventListener('drop', (event) => event.preventDefault());
+
+let hostingPollBusy = false;
+window.setInterval(async () => {
+  if (hostingPollBusy || !state) return;
+  hostingPollBusy = true;
+  try {
+    state.hosting = await window.watchdogSetup.hostingStatus();
+    if (state.hostingMode === 'native' && !state.hosting.localReady) state.verified = false;
+    const live = document.querySelector('#live-hosting');
+    if (live && !live.contains(document.activeElement)) live.replaceWith(liveHosting(state, setToast, () => { state.verified = false; step = 4; render(); }));
+  } catch {} finally { hostingPollBusy = false; }
+}, 5000);

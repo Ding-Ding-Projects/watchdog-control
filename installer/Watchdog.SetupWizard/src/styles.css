@@ -110,3 +110,8 @@ md-filled-button[hidden], md-outlined-button[hidden], md-text-button[hidden] { d
   .step-list .complete .step-number { background: #17478a; color: #dbe4ff; }
   .status-row { background: #202633; }
 }
+
+.hosting-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 12px; }
+.hosting-url { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-block: 16px; }
+.hosting-url a { overflow-wrap: anywhere; color: var(--md-sys-color-primary, #2456a6); }
+#hosting-mode { display: block; width: 100%; min-height: 48px; padding: 12px; margin-block: 8px 20px; font: inherit; color: inherit; background: transparent; border-radius: 8px; }

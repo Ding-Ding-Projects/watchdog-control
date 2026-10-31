@@ -1,6 +1,13 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('watchdogSetup', Object.freeze({
+  hostingStatus: () => ipcRenderer.invoke('hosting:status'),
+  configureStartup: enabled => ipcRenderer.invoke('hosting:startup', enabled),
+  stopHosting: () => ipcRenderer.invoke('hosting:stop'),
+  saveWebhook: value => ipcRenderer.invoke('hosting:save-webhook', value),
+  removeWebhook: () => ipcRenderer.invoke('hosting:remove-webhook'),
+  testWebhook: () => ipcRenderer.invoke('hosting:test-webhook'),
+  useUrl: (target, action) => ipcRenderer.invoke('hosting:use-url', { target, action }),
   loadState: () => ipcRenderer.invoke('setup:load-state'),
   getBuildInfo: () => ipcRenderer.invoke('setup:get-build-info'),
   saveSettings: (value) => ipcRenderer.invoke('setup:save-settings', value),

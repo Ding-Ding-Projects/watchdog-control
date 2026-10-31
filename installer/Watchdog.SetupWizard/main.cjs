@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell, clipboard } = require('electron');
 const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const { promises: fs } = require('node:fs');
@@ -21,6 +21,17 @@ const DEFAULT_STORAGE = path.join(app.getPath('userData'), 'data');
 const DEFAULT_COMPOSE = path.join(app.getPath('userData'), 'service');
 const MAX_STATE_BYTES = 32768;
 const MAX_LOG_LINES = 100;
+const { createTlsServices } = require('./hosting/tls.cjs');
+const { secureSecretDirectory, writeSecretFile, getLanIpv4Addresses, randomCode, ensureTlsMaterial, isHostPortAvailable } = createTlsServices({
+  getState: () => state, secretDirectory: SECRET_DIR, powershell, quotePowerShell, sha256, safeSummary
+});
+const { createHosting } = require('./hosting/setup.cjs');
+const { verifyEndpoint } = require('./hosting/endpoint.cjs');
+const hosting = createHosting({ userData: app.getPath('userData'), secretDirectory: SECRET_DIR,
+  resourceRoot: app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '../../artifacts'),
+  helpers: { secureDirectory: secureSecretDirectory, addresses: getLanIpv4Addresses,
+    portAvailable: isHostPortAvailable, writeSecret: writeSecretFile, tls: ensureTlsMaterial,
+    checkCancelled, progress } });
 
 let mainWindow;
 let currentOperation = null;
@@ -28,6 +39,10 @@ let state = {
   schemaVersion: 1,
   lastStep: 0,
   hostPort: 8443,
+  hostingMode: 'native',
+  tunnelEnabled: false,
+  startupEnabled: false,
+  hosting: null,
   lanAddresses: [],
   lanBindAddress: '',
   storageDirectory: DEFAULT_STORAGE,
@@ -77,21 +92,25 @@ async function loadState() {
     if (info.size > MAX_STATE_BYTES) throw new Error('The saved setup record exceeds its safe size limit.');
     const parsed = JSON.parse(await fs.readFile(USER_DATA, 'utf8'));
     if (!parsed || parsed.schemaVersion !== 1 || typeof parsed !== 'object') throw new Error('The saved setup record has an unsupported shape.');
-    state = { ...state, ...parsed };
+    for (const key of Object.keys(state)) if (Object.hasOwn(parsed, key)) state[key] = parsed[key];
+    if (!Object.hasOwn(parsed, 'hostingMode') && parsed.serviceStarted) state.hostingMode = 'docker';
   } catch (error) {
     if (error.code !== 'ENOENT') {
       state.progressRecoveryWarning = error.message || 'The previous setup progress could not be read.';
       state.lastStep = 0;
     }
   }
+  state.hostingMode = state.hostingMode === 'docker' ? 'docker' : 'native';
+  state.hosting = await hosting.snapshot();
+  if (state.hostingMode === 'native') state.verified = state.hosting.localReady;
   state.lanAddresses = await getLanIpv4Addresses().catch(() => []);
   if (!state.lanAddresses.includes(state.lanBindAddress)) {
     const previousAddress = state.lanBindAddress;
     state.lanBindAddress = state.lanAddresses[0] || '';
-    if (previousAddress) state.startConfirmed = false;
+    if (previousAddress) { state.startConfirmed = false; state.verified = false; }
   }
   try {
-    state.release = await getProductRelease();
+    if (state.hostingMode === 'docker') state.release = await getProductRelease();
     state.releaseError = null;
   } catch (error) {
     state.release = null;
@@ -444,78 +463,6 @@ async function verifyComposeSource() {
   return { compose, hostBat, hostPs };
 }
 
-async function secureSecretDirectory(directory) {
-  await fs.mkdir(directory, { recursive: true });
-  const script = `$ErrorActionPreference = 'Stop'\n$directory = ${quotePowerShell(directory)}\n$identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name\n& icacls.exe $directory /inheritance:r /grant:r ($identity + ':(OI)(CI)F') | Out-Null\nif ($LASTEXITCODE -ne 0) { throw 'Could not protect the setup secret folder.' }\n`;
-  const result = await powershell(script);
-  if (result.exitCode !== 0) throw new Error('Windows could not apply user-only permissions to the setup secret folder.');
-}
-
-async function writeSecretFile(file, value) {
-  await fs.writeFile(file, value, { encoding: 'utf8', flag: 'w', mode: 0o600 });
-  const script = `$ErrorActionPreference = 'Stop'\n$file = ${quotePowerShell(file)}\n$identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name\n& icacls.exe $file /inheritance:r /grant:r ($identity + ':F') | Out-Null\nif ($LASTEXITCODE -ne 0) { throw 'Could not protect a setup credential file.' }\n`;
-  const result = await powershell(script);
-  if (result.exitCode !== 0) throw new Error('Windows could not apply user-only permissions to a setup credential file.');
-}
-
-async function getLanIpv4Addresses() {
-  const privateAddress = '^(10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d{1,3}\\.\\d{1,3}|192\\.168\\.\\d{1,3}\\.\\d{1,3})$';
-  const script = `$ErrorActionPreference = 'Stop'\n$addresses = @(Get-NetAdapter -Physical -ErrorAction Stop | Where-Object { $_.Status -eq 'Up' } | ForEach-Object { Get-NetIPAddress -InterfaceIndex $_.ifIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue } | Where-Object { $_.IPAddress -match '${privateAddress}' } | ForEach-Object { $_.IPAddress } | Sort-Object -Unique)\nConvertTo-Json -InputObject $addresses -Compress\n`;
-  const result = await powershell(script, { timeoutMs: 15000 });
-  if (result.exitCode !== 0 || !result.stdout.trim()) return [];
-  try {
-    const parsed = JSON.parse(result.stdout.trim());
-    const addresses = Array.isArray(parsed) ? parsed : [parsed];
-    return [...new Set(addresses.filter((address) => typeof address === 'string' && net.isIP(address) === 4))].sort();
-  } catch { return []; }
-}
-
-function randomCode() {
-  return crypto.randomBytes(24).toString('base64url');
-}
-
-async function ensureTlsMaterial() {
-  const pfx = path.join(SECRET_DIR, 'watchdog_tls.pfx');
-  const passwordFile = path.join(SECRET_DIR, 'watchdog_tls_password');
-  const certFile = path.join(SECRET_DIR, 'watchdog_tls.cer');
-  const lanAddress = state.lanBindAddress;
-  if (!lanAddress || net.isIP(lanAddress) !== 4) throw new Error('Choose an active private LAN address before creating the service certificate.');
-  try {
-    await Promise.all([fs.access(pfx), fs.access(passwordFile), fs.access(certFile)]);
-    const cert = await fs.readFile(certFile);
-    const identity = new crypto.X509Certificate(cert);
-    const expectedSans = new Set(['DNS:localhost', 'IP Address:127.0.0.1', `IP Address:${lanAddress}`]);
-    const currentSans = new Set(String(identity.subjectAltName || '').split(/,\s*/).filter(Boolean));
-    const hasOnlyCurrentNames = currentSans.size === expectedSans.size && [...expectedSans].every((name) => currentSans.has(name));
-    const coversCurrentHost = Boolean(identity.checkHost('localhost'))
-      && Boolean(identity.checkIP('127.0.0.1'))
-      && Boolean(identity.checkIP(lanAddress))
-      && hasOnlyCurrentNames;
-    if (coversCurrentHost) return { pfx, passwordFile, certFile, fingerprint: sha256(cert).toUpperCase(), rotated: false };
-  } catch {}
-  const password = randomCode();
-  await writeSecretFile(passwordFile, password);
-  const san = ['DNS=localhost', 'IPAddress=127.0.0.1', `IPAddress=${lanAddress}`].join('&');
-  const extensions = [
-    `2.5.29.17={text}${san}`,
-    '2.5.29.37={text}1.3.6.1.5.5.7.3.1'
-  ].map(quotePowerShell).join(',');
-  const script = `$ErrorActionPreference = 'Stop'\n$password = ([IO.File]::ReadAllText(${quotePowerShell(passwordFile)})).Trim()\n$secure = ConvertTo-SecureString $password -AsPlainText -Force\n$extensions = @(${extensions})\n$cert = New-SelfSignedCertificate -Type Custom -Subject 'CN=localhost' -TextExtension $extensions -KeyUsage DigitalSignature,KeyEncipherment -CertStoreLocation 'Cert:\\CurrentUser\\My' -FriendlyName 'Watchdog Control Setup' -KeyExportPolicy Exportable -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -NotAfter (Get-Date).AddYears(2)\ntry { Export-PfxCertificate -Cert $cert -FilePath ${quotePowerShell(pfx)} -Password $secure -Force | Out-Null; Export-Certificate -Cert $cert -FilePath ${quotePowerShell(certFile)} -Type CERT -Force | Out-Null } finally { Remove-Item -LiteralPath (Join-Path 'Cert:\\CurrentUser\\My' $cert.Thumbprint) -Force -ErrorAction SilentlyContinue }\n`;
-  const result = await powershell(script, { timeoutMs: 60000 });
-  if (result.exitCode !== 0) throw new Error(`TLS certificate creation failed: ${safeSummary(result.stderr || result.stdout)}`);
-  const certificate = await fs.readFile(certFile);
-  return { pfx, passwordFile, certFile, fingerprint: sha256(certificate).toUpperCase(), rotated: true };
-}
-
-async function isHostPortAvailable(port) {
-  return new Promise((resolve) => {
-    const server = net.createServer();
-    server.once('error', () => resolve(false));
-    server.listen({ host: state.lanBindAddress, port, exclusive: true }, () => {
-      server.close(() => resolve(true));
-    });
-  });
-}
 
 async function prepareComposeDirectory(release) {
   const requested = path.resolve(state.composeDirectory || DEFAULT_COMPOSE);
@@ -560,18 +507,12 @@ async function compose(args) {
 }
 
 async function healthCheck(address, port, fingerprint) {
-  return new Promise((resolve) => {
-    const request = https.request({ hostname: address, port, path: '/health', method: 'GET', rejectUnauthorized: false, timeout: 4000 }, (response) => {
-      const peer = request.socket.getPeerCertificate();
-      const actual = String(peer.fingerprint256 || '').replaceAll(':', '').toUpperCase();
-      const identityError = tlsModule.checkServerIdentity(address, peer);
-      response.resume();
-      resolve(response.statusCode >= 200 && response.statusCode < 300 && actual === fingerprint && !identityError);
-    });
-    request.on('timeout', () => { request.destroy(); resolve(false); });
-    request.on('error', () => resolve(false));
-    request.end();
-  });
+  try {
+    const certificate = await fs.readFile(path.join(SECRET_DIR, 'watchdog_tls.cer'));
+    if (sha256(certificate).toUpperCase() !== fingerprint) return false;
+    await verifyEndpoint(`https://${address}:${port}`, new crypto.X509Certificate(certificate).toString());
+    return true;
+  } catch { return false; }
 }
 
 async function waitForHealth(port, fingerprint) {
@@ -581,7 +522,7 @@ async function waitForHealth(port, fingerprint) {
     checkCancelled();
     attempt += 1;
     progress('Waiting for HTTPS health', `Checking the pinned certificate and /health endpoint (${attempt}).`);
-    if (await healthCheck('127.0.0.1', port, fingerprint)) return;
+    if (await healthCheck(state.lanBindAddress, port, fingerprint)) return;
     await new Promise((resolve) => setTimeout(resolve, 3000));
   }
   throw new Error('The service did not pass the pinned-certificate HTTPS health check within 90 seconds. It may still be running; setup did not remove it.');
@@ -617,6 +558,7 @@ async function exportPublicCertificate() {
 }
 
 async function downloadAgent() {
+  if (!state.release) state.release = await getProductRelease();
   const release = await fetchJson(`https://api.github.com/repos/${OWNER_REPOSITORY}/releases/latest`);
   if (release.draft || release.prerelease || release.tag_name !== state.release.tag) throw new Error('The product release changed during setup.');
   const asset = (release.assets || []).find((item) => item.name === 'watchdog-agent-win-x64.exe');
@@ -671,6 +613,14 @@ async function executeInstall() {
   state.lastStep = 5;
   await saveState();
   try {
+    if (state.hostingMode === 'native') {
+      progress('Starting native hosting', 'Using the bundled self-contained controller. Docker is not required or installed.');
+      const pairingCode = await hosting.native(state);
+      checkCancelled();
+      if (state.manageThisComputer && state.agentConsent) await installAgent();
+      await saveState();
+      return { ...publicState(), pairingCode };
+    }
     progress('Checking release', 'Verifying the normal release manifest, immutable image digest, and source tag.');
     state.release = await getProductRelease();
     state.releaseError = null;
@@ -740,6 +690,8 @@ async function executeInstall() {
     if (!lanUrl) throw new Error('Loopback health passed, but the host could not verify a LAN-interface health response. The service remains running. Check firewall and network binding.');
     state.lanUrl = lanUrl;
     state.verified = true;
+    if (state.tunnelEnabled || state.startupEnabled) await hosting.startSupervisor(state, tls);
+    state.hosting = await hosting.snapshot();
     if (state.manageThisComputer && state.agentConsent) await installAgent();
     else if (state.manageThisComputer) state.agentStatus = 'Pending. Separate machine-wide service consent was not recorded.';
     state.pairingCodeShown = true;
@@ -766,6 +718,9 @@ function validateSettings(value) {
   const storageDirectory = rawStorageDirectory ? path.resolve(rawStorageDirectory) : '';
   if ((storageDirectory && storageDirectory.length < 4) || storageDirectory.includes('\0')) throw new Error('Choose a valid local data folder.');
   return {
+    hostingMode: value.hostingMode === 'docker' ? 'docker' : 'native',
+    tunnelEnabled: Boolean(value.tunnelEnabled),
+    startupEnabled: Boolean(value.startupEnabled),
     hostPort: port,
     lanBindAddress,
     storageDirectory,
@@ -825,11 +780,15 @@ app.whenReady().then(() => {
     return { schemaVersion: 1, version: 'unavailable', builtAtUtc: null };
   });
   ipcMain.handle('setup:save-settings', async (_event, value) => {
+    if (currentOperation) throw new Error('Wait for the current setup operation before changing settings.');
+    const previousMode = state.hostingMode;
+    const previousTunnel = state.tunnelEnabled;
+    const previousStartup = state.startupEnabled;
     const previousPort = state.hostPort;
     const previousStorage = state.storageDirectory;
     const previousLanBindAddress = state.lanBindAddress;
     Object.assign(state, validateSettings(value));
-    if (state.hostPort !== previousPort || state.storageDirectory !== previousStorage || state.lanBindAddress !== previousLanBindAddress) state.startConfirmed = false;
+    if (state.startupEnabled !== previousStartup || state.hostingMode !== previousMode || state.tunnelEnabled !== previousTunnel || state.hostPort !== previousPort || state.storageDirectory !== previousStorage || state.lanBindAddress !== previousLanBindAddress) state.startConfirmed = false;
     await saveState();
     return publicState();
   });
@@ -866,6 +825,37 @@ app.whenReady().then(() => {
     return publicState();
   });
   ipcMain.handle('setup:export-certificate', async () => exportPublicCertificate());
+  ipcMain.handle('hosting:status', async () => {
+    const current = await hosting.snapshot();
+    if (state.hostingMode === 'native' && !current.localReady) state.verified = false;
+    return current;
+  });
+  ipcMain.handle('hosting:startup', async (_event, enabled) => {
+    const result = await hosting.startup(enabled === true);
+    state.startupEnabled = enabled === true; await saveState(); return result;
+  });
+  ipcMain.handle('hosting:stop', async () => {
+    if (currentOperation) throw new Error('Cancel setup before stopping hosting.');
+    state.verified = false; state.serviceStarted = false;
+    await saveState();
+    return hosting.stop();
+  });
+  ipcMain.handle('hosting:save-webhook', async (_event, value) => {
+    await secureSecretDirectory(SECRET_DIR);
+    return hosting.credentials.save(value);
+  });
+  ipcMain.handle('hosting:remove-webhook', async () => hosting.credentials.remove());
+  ipcMain.handle('hosting:test-webhook', async () => hosting.credentials.send(null, true));
+  ipcMain.handle('hosting:use-url', async (_event, { target, action } = {}) => {
+    const current = await hosting.snapshot();
+    if (!['public', 'local'].includes(target)) throw new Error('Choose a verified address.');
+    const expectedLocal = `https://${state.lanBindAddress}:${state.hostPort}`;
+    const url = target === 'public' ? current.publicUrl : state.verified && state.lanUrl === expectedLocal ? expectedLocal : null;
+    if (!url || !['open', 'copy'].includes(action)) throw new Error('A verified address is not available.');
+    if (action === 'copy') clipboard.writeText(url);
+    else await shell.openExternal(url);
+    return true;
+  });
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
