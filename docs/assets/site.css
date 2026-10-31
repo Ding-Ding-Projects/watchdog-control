@@ -45,3 +45,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 @keyframes cc-ping{80%,100%{box-shadow:0 0 0 10px rgba(124,255,178,0)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 body.reduce-motion *,body.reduce-motion *::before,body.reduce-motion *::after,body.reduce-motion::before{animation:none!important;transition:none!important}
+
+.article-code{max-width:100%;overflow:auto;white-space:pre;padding:1rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.article-code code{white-space:pre;overflow-wrap:normal;word-break:normal}
+.article-code:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
