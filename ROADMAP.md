@@ -41,11 +41,12 @@
 
 - [x] Build candidate 0.3.2 through the exact root package entrypoint and complete actual native setup with saved verified readiness.
 - [x] Build the 0.3.2 single-file setup candidate; exact package SHA-256 is recorded in HANDOFF.md.
-- [ ] Complete single-file launch and visual acceptance; the initial blank window image is not usable proof.
+- [x] Verify exact single-file launch, extracted archive/build receipt match, visible 0.3.2 source/state readback and Finish closure while persistent hosting continues.
+- [ ] Complete the broader layout matrix and promote reviewed public-safe setup captures; the usable private capture is excluded from publication.
 - [x] Exercise the v0.1.1 one-click route with the ready local engine. It started only the Watchdog Control project, installed no software, and returned HTTPS health HTTP 200. The setup window then exited during concurrent progress persistence; the historical result is retained in the evidence archive. Current 0.3.2 native completion is verified separately.
 - [ ] Verify guided recovery for unavailable Docker, ambiguous LAN interfaces, occupied ports, saved data locations, and interrupted setup.
 - [ ] Capture and inspect genuine current screenshots for the welcome, host-settings, review, and completion states; keep sensitive pairing values out of captures. The earlier white capture is not current evidence.
-- [x] Verify the packaged 0.3.2 native setup/state and strict endpoints on the supported Windows host; retain single-file visual acceptance and unavailable scenarios separately.
+- [x] Verify the packaged 0.3.2 native setup/state and strict endpoints on the supported Windows host; retain broader visual coverage and unavailable scenarios separately.
 - [ ] Verify `host.bat` double-click default, `--detached`, `--logs`, and explicit `--stop` behavior.
 
 ## 3. Image, release, and live service
