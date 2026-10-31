@@ -3,7 +3,8 @@
 ## Native hosting and terminal handoff, October 2026
 
 - [x] Implement native/Compose selection, protected notifications, monitored temporary tunnels and owned sign-in startup; sixteen focused source checks pass.
-- [ ] Build and drive the updated portable assistant, verify the native endpoint and temporary public address, recovery and actual sign-in registration.
+- [x] Verify the 0.3.1 native endpoint, temporary public address, actual tunnel replacement and current-user sign-in registration.
+- [ ] Build and drive the 0.3.2 portable assistant through completion with its strict bundled verifier.
 - [ ] Verify Discord delivery with an operator-configured protected destination.
 - [ ] Bundle and publish the container monitor with the controller, then verify a real container run on a supported host.
 - [x] Open [terminal design handoff #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) with complete required-feature acceptance criteria.

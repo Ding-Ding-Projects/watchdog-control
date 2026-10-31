@@ -1,6 +1,6 @@
 # Watchdog Control
 
-Current development adds [native hosting, verified temporary access, protected Discord notifications and sign-in startup](docs/features/native-hosting.md). The portable setup build now bundles the native controller and hosting tools, so this route does not require Docker. Packaged and live runtime verification is pending. [Issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) hands the requested live chat-style PowerShell/CMD terminal to the designer.
+Current development adds [native hosting, verified temporary access, protected Discord notifications and sign-in startup](docs/features/native-hosting.md). The portable setup bundles the native controller and hosting tools, so this route does not require Docker. The 0.3.1 controller passed HTTPS, protected API and live tunnel-recovery checks; the 0.3.2 candidate repairs the setup wizard's separate certificate-verification path. Its packaged completion check remains pending. [Issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) hands the requested live chat-style PowerShell/CMD terminal to the designer.
 
 [Documentation site](https://ding-ding-projects.github.io/watchdog-control/)
 
