@@ -27,3 +27,9 @@ Nineteen focused hosting/recovery checks passed through `a75fba9`, with independ
 The [single-container route](container-hosting.md) bundles the controller and monitor. Its actual image build, pull and run remain unverified on a host without Docker.
 
 The requested live chat-style PowerShell/CMD interface is handed off in [issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3). Its design and proposed API are not implemented by this hosting change.
+
+## Windows TLS key lifetime
+
+The native controller imports its PKCS#12 certificate with `UserKeySet` on Windows so Schannel can access the private key during TLS handshakes. Other operating systems retain `EphemeralKeySet`. The certificate is owned by the application scope and disposed after Kestrel stops, including startup failures. The import does not request machine-wide storage, permanent key persistence, or exportability. CA and hostname verification remain enabled.
+
+This addresses the observed Schannel `0x8009030E` handshake failure described in [Microsoft's TLS troubleshooting guidance](https://learn.microsoft.com/en-us/dotnet/core/extensions/sslstream-troubleshooting#handshake-failed-with-ephemeral-keys). A focused loopback handshake check exercises the actual loader from source with a generated certificate and custom-root trust. The rebuilt packaged controller still needs independent endpoint verification before native deployment is considered verified.
