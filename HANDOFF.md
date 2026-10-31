@@ -1,5 +1,11 @@
 # Handoff
 
+## Hosting checkpoint, 2026-10-31
+
+The native/Compose hosting implementation and lifecycle repairs are preserved through `f285a8a90569aefeb1d972e412e232895fa554fb`, verified on its remote task branch. Sixteen focused checks passed and independent source review found the recorded defects resolved. The packaging checkpoint switches the root scripts to the existing portable desktop assistant and bundles the native controller, Node.js and pinned cloudflared. Its build, real setup, tunnel recovery, startup registration and webhook delivery still need verification. See [the hosting workflow](docs/features/native-hosting.md) and [current continuation checkpoint](CLOSEOUT_PROMPT.md).
+
+The owner explicitly handed terminal interface design to the design tool through [issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3). No terminal design was authored here. The endpoint table is a proposal and must not be described as an implemented API.
+
 ## Current state
 
 Version 0.2.0 adds Slop Machine remote control and a command centre redesign of every interface.

@@ -1,5 +1,7 @@
 # Feature workflows
 
+Current development: [native hosting, temporary access, Discord notification and sign-in startup](native-hosting.md). The portable setup build now targets the browser-based desktop assistant and bundles the native controller. Packaging and deployment verification remain pending; the earlier WPF evidence below is historical.
+
 The product source contains the dashboard, authenticated API, host agent, fixed operation catalog, and tailored WPF setup assistant. The exact root `build.bat` completed on 2026-10-23 with 0 warnings and 0 errors. The exact root `build-installer.bat` also completed from source revision `f4850abe2a63605d2f25ee26b293489a3f235a27`; rebuild it from the final source before release. Local builds do not prove publication, an installed service, remote LAN access, or a host operation.
 
 ## Host information

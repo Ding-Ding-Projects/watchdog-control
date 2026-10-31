@@ -1,6 +1,10 @@
 **/bin/
 **/obj/
 **/out/
+**/node_modules/
+/installer/Watchdog.SetupWizard/dist/
+/installer/Watchdog.SetupWizard/build-provenance.json
+/installer/Watchdog.SetupWizard/public/build-provenance.json
 /.tools/
 /artifacts/
 /release/

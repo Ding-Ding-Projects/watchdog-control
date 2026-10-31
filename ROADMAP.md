@@ -1,5 +1,14 @@
 # Roadmap
 
+## Native hosting and terminal handoff, October 2026
+
+- [x] Implement native/Compose selection, protected notifications, monitored temporary tunnels and owned sign-in startup; sixteen focused source checks pass.
+- [ ] Build and drive the updated portable assistant, verify the native endpoint and temporary public address, recovery and actual sign-in registration.
+- [ ] Verify Discord delivery with an operator-configured protected destination.
+- [ ] Bundle and publish the container monitor with the controller, then verify a real container run on a supported host.
+- [x] Open [terminal design handoff #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) with complete required-feature acceptance criteria.
+- [ ] Implement and verify the reviewed terminal design and its authenticated PowerShell/CMD backend.
+
 ## 1. Product workflows
 
 - [ ] Inspect the built dashboard's host overview and supported management workflows.

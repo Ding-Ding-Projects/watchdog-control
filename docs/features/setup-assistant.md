@@ -1,5 +1,9 @@
 # Automatic setup assistant
 
+## Current hosting expansion
+
+The current source selects native Windows hosting by default, with Docker Compose as an explicit alternative. It adds temporary Cloudflare access, protected Discord webhook configuration and current-user sign-in startup. See [native hosting and temporary access](native-hosting.md) for behavior and the exact pending verification. The historical release evidence below describes earlier packages and does not prove this new flow.
+
 **The normal `v0.1.1` release is published.** Its portable setup file is 68,084,205 bytes with SHA-256 `f8154f0d6978c1b95175fab12ecfaa3bed378c94338205459f9bf4a36e2d3114`; it embeds `compose.yaml`. The local `v0.1.1` file was launched without installation and its welcome-screen host action pulled the verified image, wrote its service files, started the named Compose project, and passed HTTPS health on the selected LAN address. The container remained healthy after the setup window hit a concurrent progress-save failure. The source now gives each state write a unique temporary file; the fix, updated `v0.1.2` package, and rebuilt interface still need verification. Current screenshots are pending because the earlier capture was blank.
 
 ## One-click hosting from the welcome screen

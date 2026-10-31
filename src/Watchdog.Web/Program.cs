@@ -44,7 +44,15 @@ builder.WebHost.ConfigureKestrel(options =>
             certificatePath,
             password,
             X509KeyStorageFlags.EphemeralKeySet);
-        options.ListenAnyIP(8443, listen => listen.UseHttps(certificate));
+        var addressText = builder.Configuration["WATCHDOG_BIND_ADDRESS"] ?? "0.0.0.0";
+        var portText = builder.Configuration["WATCHDOG_PORT"] ?? "8443";
+        if (!IPAddress.TryParse(addressText, out var address) ||
+            (!address.Equals(IPAddress.Any) && !address.Equals(IPAddress.IPv6Any) && !IsPrivateAddress(address)) ||
+            !int.TryParse(portText, out var port) || port is < 1024 or > 65535)
+        {
+            throw new InvalidOperationException("A local/private bind address and a port between 1024 and 65535 are required.");
+        }
+        options.Listen(address, port, listen => listen.UseHttps(certificate));
     }
     else if (!builder.Environment.IsDevelopment())
     {

@@ -13,6 +13,11 @@
     "archiveUrl": "https://nodejs.org/dist/v24.22.1/node-v24.22.1-win-x64.zip",
     "sha256": "d2046d28c2c3dcd211ac5145c0bf30e2047ef9dfb306693c8c6e2eccd8b95fa5"
   },
+  "cloudflared": {
+    "version": "2026.10.7",
+    "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-windows-amd64.exe",
+    "sha256": "2493dbc168923bb3e59e5e7716f71deced92992eea9acd6e9d74f84ac7751343"
+  },
   "githubCli": {
     "version": "2.103.0",
     "linuxX64Archive": "https://github.com/cli/cli/releases/download/v2.103.0/gh_2.103.0_linux_amd64.tar.gz",
