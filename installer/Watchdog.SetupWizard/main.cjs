@@ -26,9 +26,12 @@ const { secureSecretDirectory, writeSecretFile, getLanIpv4Addresses, randomCode,
   getState: () => state, secretDirectory: SECRET_DIR, powershell, quotePowerShell, sha256, safeSummary
 });
 const { createHosting } = require('./hosting/setup.cjs');
-const { verifyEndpoint } = require('./hosting/endpoint.cjs');
+const { createEndpointVerifier } = require('./hosting/endpoint-verifier.cjs');
+const resourceRoot = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '../../artifacts');
+const verifyEndpoint = createEndpointVerifier({ resourceRoot, directory: path.join(app.getPath('userData'), 'endpoint-verifier'),
+  secureDirectory: secureSecretDirectory, checkCancelled });
 const hosting = createHosting({ userData: app.getPath('userData'), secretDirectory: SECRET_DIR,
-  resourceRoot: app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '../../artifacts'),
+  resourceRoot, verifyEndpoint,
   helpers: { secureDirectory: secureSecretDirectory, addresses: getLanIpv4Addresses,
     portAvailable: isHostPortAvailable, writeSecret: writeSecretFile, tls: ensureTlsMaterial,
     checkCancelled, progress } });
