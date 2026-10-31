@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup assistant install progress</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+.kick{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9BA3AE}
+.num{font-family:'JetBrains Mono',monospace}
+.disp{font-family:'Bricolage Grotesque',sans-serif}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 1180px; height: 780px; box-sizing: border-box; background: #0E1116; color: #E8EAED; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; border: 1px solid #2A323D; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+  <header style="height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: #11151B; border-bottom: 1px solid #2A323D">
+    <div style="display: flex; align-items: center; gap: 10px"><svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="8" fill="#F2A93B"></rect><path d="M8 19l3-8 4 6 4-6 3 8" stroke="#0E1116" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="disp" style="font-weight: 800">Watchdog Control</span><span class="kick">setup assistant</span></div>
+    <div style="display: flex; gap: 2px"><button type="button" aria-label="Minimize window" style="width: 44px; height: 36px; border: 0; background: transparent; color: #9BA3AE">—</button><button type="button" aria-label="Maximize or restore window" style="width: 44px; height: 36px; border: 0; background: transparent; color: #9BA3AE">□</button><button type="button" aria-label="Close setup assistant" style="width: 44px; height: 36px; border: 0; background: transparent; color: #9BA3AE">×</button></div>
+  </header>
+  <main style="flex: 1; padding: 30px 40px 22px; display: flex; flex-direction: column; gap: 18px; min-height: 0">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end"><div><div class="kick">Step 6 of 6 · install and verify</div><h1 class="disp" style="margin: 6px 0 0; font-size: 40px; font-weight: 800; letter-spacing: -0.02em">Bringing the service up</h1></div><span class="num" style="font-size: 44px; font-weight: 600; color: #F2A93B">[62]%</span></div>
+    <div style="height: 10px; border-radius: 5px; background: #1D232C" role="progressbar" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" aria-label="Setup progress"><div style="width: 62%; height: 10px; border-radius: 5px; background: #F2A93B"></div></div>
+    <ol style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+      <li style="border: 1px solid #2D5A42; background: #13201A; border-radius: 10px; padding: 10px 12px; color: #7FD9A8"><div class="kick" style="color: #7FD9A8">Done</div>Verify release</li>
+      <li style="border: 1px solid #2D5A42; background: #13201A; border-radius: 10px; padding: 10px 12px; color: #7FD9A8"><div class="kick" style="color: #7FD9A8">Done</div>Write files</li>
+      <li style="border: 1px solid #F2A93B; background: #2A2113; border-radius: 10px; padding: 10px 12px; color: #FFE2B0"><div class="kick" style="color: #FFE2B0">Now</div>Pull image</li>
+      <li style="border: 1px solid #2A323D; background: #161B22; border-radius: 10px; padding: 10px 12px; color: #9BA3AE"><div class="kick">Next</div>Start service</li>
+      <li style="border: 1px solid #2A323D; background: #161B22; border-radius: 10px; padding: 10px 12px; color: #9BA3AE"><div class="kick">Next</div>Health check</li>
+    </ol>
+    <section aria-label="Operation log" style="flex: 1; min-height: 0; border: 1px solid #2A323D; border-radius: 12px; background: #0A0D11; padding: 14px 16px; overflow: hidden">
+      <pre class="num" style="margin: 0; font-size: 12px; line-height: 1.7; color: #C9CED6; white-space: pre-wrap">[time]  Release manifest verified for [v0.2.0]
+[time]  Compose configuration matched its expected checksum
+[time]  Wrote .env and host entry points (no secret values logged)
+[time]  Pulling the pinned image [sha256:…]</pre>
+    </section>
+    <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 13px; color: #9BA3AE">You can close this window. Progress resumes where it stopped.</span><div style="display: flex; gap: 8px"><button type="button" style="min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid #2A323D; background: transparent; color: #E8EAED">Copy log</button><button type="button" disabled style="min-height: 44px; padding: 0 22px; border-radius: 10px; border: 0; background: #2A323D; color: #6B7380">Finish</button></div></div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":780}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

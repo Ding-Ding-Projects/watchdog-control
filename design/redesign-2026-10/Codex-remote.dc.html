@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slop Machine remote</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#F2A93B}a:hover{color:#FFC56B}
+.kick{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9BA3AE}
+.num{font-family:'JetBrains Mono',monospace}
+.disp{font-family:'Bricolage Grotesque',sans-serif}
+button{font:inherit}
+</style>
+</helmet>
+<div style="min-height: 1180px; background: #0E1116; color: #E8EAED; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; padding: 28px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px">
+  <a href="Main.dc.html" style="font-size: 13px; text-decoration: none">← Overview</a>
+  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+    <div>
+      <div class="kick">Remote · [HOST NAME 1]</div>
+      <h1 class="disp" style="margin: 6px 0 0; font-size: 40px; line-height: 1.05; font-weight: 800; letter-spacing: -0.02em">Slop Machine remote</h1>
+      <p style="margin: 8px 0 0; color: #9BA3AE; max-width: 720px">Check the <span class="num">codex</span> command-line tool on this computer, sign it in with a device code, start remote control and pair your phone. Codes are shown here once and never written to the audit log.</p>
+    </div>
+    <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #E8EAED">Check status again</button>
+  </div>
+  <ol aria-label="Remote setup progress" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px">
+    <li style="border: 1px solid #2D5A42; background: #13201A; border-radius: 12px; padding: 12px 14px"><div class="kick" style="color: #7FD9A8">1 · Tool found</div><div style="margin-top: 4px">codex <span class="num">[VERSION]</span></div></li>
+    <li style="border: 1px solid #F2A93B; background: #2A2113; border-radius: 12px; padding: 12px 14px"><div class="kick" style="color: #FFE2B0">2 · Sign in</div><div style="margin-top: 4px">Waiting for your browser</div></li>
+    <li style="border: 1px solid #2A323D; background: #161B22; border-radius: 12px; padding: 12px 14px"><div class="kick">3 · Remote control</div><div style="margin-top: 4px; color: #9BA3AE">Not started</div></li>
+    <li style="border: 1px solid #2A323D; background: #161B22; border-radius: 12px; padding: 12px 14px"><div class="kick">4 · Pair phone</div><div style="margin-top: 4px; color: #9BA3AE">After remote control starts</div></li>
+  </ol>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px">
+    <section aria-labelledby="login-h" style="border: 1px solid #2A323D; border-radius: 14px; background: #161B22; padding: 22px">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px"><h2 id="login-h" class="disp" style="margin: 0; font-size: 22px">Sign-in assist</h2><span class="num" style="font-size: 12px; color: #F2A93B">expires in [14:21]</span></div>
+      <p style="margin: 8px 0 0; color: #9BA3AE">On any device, open the sign-in page and enter this code. The computer keeps waiting until you finish or the code expires.</p>
+      <div style="margin-top: 18px; display: flex; flex-direction: column; gap: 8px">
+        <span class="kick">Sign-in page</span>
+        <div class="num" style="padding: 12px 14px; border-radius: 10px; background: #0E1116; border: 1px solid #2A323D; overflow-x: auto">[DEVICE SIGN-IN URL]</div>
+        <span class="kick" style="margin-top: 8px">One-time code</span>
+        <div class="num" style="padding: 18px 14px; border-radius: 12px; background: #0E1116; border: 1px solid #F2A93B; font-size: 40px; font-weight: 600; letter-spacing: 0.12em; text-align: center; color: #FFE2B0">[ABCD-1234]</div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px">
+        <a href="#" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 10px; background: #F2A93B; color: #0E1116; font-weight: 600; text-decoration: none">Open sign-in page</a>
+        <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #2A323D; background: #1D232C; color: #E8EAED">Copy code</button>
+        <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #2A323D; background: transparent; color: #C9CED6">Cancel sign-in</button>
+      </div>
+      <p style="margin: 14px 0 0; font-size: 12px; color: #9BA3AE">Device-code sign-in must be allowed for your account. Workspace accounts may need an administrator to turn it on.</p>
+    </section>
+    <section aria-labelledby="rc-h" style="border: 1px solid #2A323D; border-radius: 14px; background: #161B22; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: center"><h2 id="rc-h" class="disp" style="margin: 0; font-size: 22px">Remote control</h2><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #9BA3AE"><span style="width: 8px; height: 8px; border-radius: 50%; background: #9BA3AE"></span>Stopped</span></div>
+      <p style="margin: 0; color: #9BA3AE">Starts the background service that keeps an outbound, encrypted relay connection so a paired phone can follow and steer sessions on this computer.</p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap"><button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #F2A93B; color: #0E1116; font-weight: 600">Start remote control</button><button type="button" disabled style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #2A323D; background: transparent; color: #6B7380">Stop</button></div>
+      <div style="height: 1px; background: #2A323D"></div>
+      <h3 class="disp" style="margin: 0; font-size: 18px">Pair a phone</h3>
+      <ol style="margin: 0; padding-left: 20px; color: #C9CED6; line-height: 1.7">
+        <li>In the ChatGPT phone app, open Remote.</li>
+        <li>Choose <strong>Enter code manually</strong>.</li>
+        <li>Type the pairing code below and confirm the account on the phone.</li>
+      </ol>
+      <div class="num" style="padding: 16px; border-radius: 12px; background: #0E1116; border: 1px dashed #3A4350; font-size: 30px; letter-spacing: 0.14em; text-align: center; color: #6B7380">— — — —</div>
+      <button type="button" disabled style="align-self: flex-start; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #2A323D; background: transparent; color: #6B7380">Create pairing code</button>
+    </section>
+  </div>
+  <section style="border: 1px solid #2A323D; border-radius: 14px; background: #11151B; padding: 18px 20px">
+    <div style="display: flex; justify-content: space-between"><h2 class="disp" style="margin: 0; font-size: 18px">Activity</h2><span class="kick">Codes redacted</span></div>
+    <ul style="list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+      <li style="display: flex; gap: 14px"><span class="num" style="color: #9BA3AE; min-width: 70px">[TIME]</span><span>Sign-in started. Code shown in this browser only.</span></li>
+      <li style="display: flex; gap: 14px"><span class="num" style="color: #9BA3AE; min-width: 70px">[TIME]</span><span>Status checked: tool <span class="num">[VERSION]</span>, not signed in.</span></li>
+    </ul>
+  </section>
+  <section style="border: 1px solid #2A323D; border-radius: 14px; background: #161B22; padding: 18px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center">
+    <div><h2 class="disp" style="margin: 0; font-size: 18px">Sign out of the tool</h2><p style="margin: 6px 0 0; color: #9BA3AE; font-size: 13px">Removes saved sign-in on this computer. Requires the typed phrase.</p></div>
+    <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #FF6B5B; background: transparent; color: #FFB3A8">Sign out</button>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

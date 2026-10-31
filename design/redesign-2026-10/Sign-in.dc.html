@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sign in and owner setup</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#F2A93B}a:hover{color:#FFC56B}
+.kick{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9BA3AE}
+.num{font-family:'JetBrains Mono',monospace}
+.disp{font-family:'Bricolage Grotesque',sans-serif}
+button,input{font:inherit}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #0E1116; color: #E8EAED; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; display: flex; flex-wrap: wrap">
+  <section style="flex: 1 1 520px; padding: 56px 56px 40px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; gap: 32px; background: #11151B; border-right: 1px solid #2A323D">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg width="34" height="34" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="8" fill="#F2A93B"></rect><path d="M8 19l3-8 4 6 4-6 3 8" stroke="#0E1116" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span class="disp" style="font-weight: 800; font-size: 19px">Watchdog Control</span>
+    </div>
+    <div>
+      <div class="kick">Private network administration</div>
+      <h1 class="disp" style="margin: 10px 0 0; font-size: 64px; line-height: 0.98; font-weight: 800; letter-spacing: -0.03em">Someone has to<br>keep watch.</h1>
+      <p style="margin: 18px 0 0; color: #9BA3AE; max-width: 460px; font-size: 16px; line-height: 1.6">One owner. Fixed, typed host actions. A typed phrase before anything that can switch a computer off. Every action lands in the audit log.</p>
+    </div>
+    <svg viewBox="0 0 520 60" preserveAspectRatio="none" aria-hidden="true" style="width: 100%; height: 60px"><path d="M0 40 H140 L155 40 L165 10 L178 54 L190 40 H520" stroke="#F2A93B" stroke-width="2" fill="none"></path></svg>
+  </section>
+  <section style="flex: 1 1 480px; padding: 56px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 28px">
+    <form style="max-width: 420px; width: 100%; display: flex; flex-direction: column; gap: 14px">
+      <h2 class="disp" style="margin: 0; font-size: 30px">Sign in</h2>
+      <label style="display: flex; flex-direction: column; gap: 6px"><span class="kick">Owner name</span><input autocomplete="username" style="min-height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #E8EAED"></label>
+      <label style="display: flex; flex-direction: column; gap: 6px"><span class="kick">Password</span><input type="password" autocomplete="current-password" style="min-height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #E8EAED"></label>
+      <button type="submit" style="min-height: 48px; border-radius: 10px; border: 0; background: #F2A93B; color: #0E1116; font-weight: 600">Sign in</button>
+      <p style="margin: 0; font-size: 12px; color: #9BA3AE">The controller only accepts credentials over HTTPS.</p>
+    </form>
+    <div style="max-width: 420px; width: 100%; border: 1px solid #2A323D; border-radius: 14px; background: #161B22; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+      <div class="kick">First run · step 1 of 3</div>
+      <ol aria-label="Owner setup steps" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+        <li style="height: 6px; border-radius: 3px; background: #F2A93B"></li>
+        <li style="height: 6px; border-radius: 3px; background: #2A323D"></li>
+        <li style="height: 6px; border-radius: 3px; background: #2A323D"></li>
+      </ol>
+      <h3 class="disp" style="margin: 0; font-size: 20px">Create the owner</h3>
+      <p style="margin: 0; color: #9BA3AE; font-size: 13px">Use the one-time code from the setup assistant. Owner name is saved so you can resume; the code and password never are.</p>
+      <div style="display: flex; justify-content: space-between"><button type="button" disabled style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #2A323D; background: transparent; color: #6B7380">Back</button><button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #F2A93B; color: #0E1116; font-weight: 600">Next</button></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

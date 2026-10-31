@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup assistant welcome</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+.kick{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9BA3AE}
+.num{font-family:'JetBrains Mono',monospace}
+.disp{font-family:'Bricolage Grotesque',sans-serif}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 1180px; height: 780px; box-sizing: border-box; background: #0E1116; color: #E8EAED; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; border: 1px solid #2A323D; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+  <header style="height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: #11151B; border-bottom: 1px solid #2A323D">
+    <div style="display: flex; align-items: center; gap: 10px"><svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="8" fill="#F2A93B"></rect><path d="M8 19l3-8 4 6 4-6 3 8" stroke="#0E1116" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="disp" style="font-weight: 800">Watchdog Control</span><span class="kick">setup assistant</span></div>
+    <div style="display: flex; gap: 2px"><button type="button" aria-label="Minimize window" style="width: 44px; height: 36px; border: 0; background: transparent; color: #9BA3AE">—</button><button type="button" aria-label="Maximize or restore window" style="width: 44px; height: 36px; border: 0; background: transparent; color: #9BA3AE">□</button><button type="button" aria-label="Close setup assistant" style="width: 44px; height: 36px; border: 0; background: transparent; color: #9BA3AE">×</button></div>
+  </header>
+  <div style="flex: 1; display: flex; min-height: 0">
+    <nav aria-label="Setup steps" style="width: 260px; padding: 24px 18px; box-sizing: border-box; background: #11151B; border-right: 1px solid #2A323D; display: flex; flex-direction: column; gap: 4px">
+      <div class="kick" style="padding: 0 8px 12px">Step 1 of 6</div>
+      <div style="display: flex; gap: 12px; align-items: center; padding: 10px 8px; border-radius: 10px; background: #2A2113"><span class="num" style="width: 28px; height: 28px; border-radius: 50%; background: #F2A93B; color: #0E1116; display: flex; align-items: center; justify-content: center; font-weight: 600">1</span><span><strong style="color: #FFE2B0">Welcome</strong><br><span style="font-size: 12px; color: #C9A97A">What this setup changes</span></span></div>
+      <div style="display: flex; gap: 12px; align-items: center; padding: 10px 8px"><span class="num" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid #3A4350; color: #9BA3AE; display: flex; align-items: center; justify-content: center">2</span><span>Host settings<br><span style="font-size: 12px; color: #9BA3AE">Port and saved data</span></span></div>
+      <div style="display: flex; gap: 12px; align-items: center; padding: 10px 8px"><span class="num" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid #3A4350; color: #9BA3AE; display: flex; align-items: center; justify-content: center">3</span><span>Prerequisites<br><span style="font-size: 12px; color: #9BA3AE">Container runtime</span></span></div>
+      <div style="display: flex; gap: 12px; align-items: center; padding: 10px 8px"><span class="num" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid #3A4350; color: #9BA3AE; display: flex; align-items: center; justify-content: center">4</span><span>Manage this computer<br><span style="font-size: 12px; color: #9BA3AE">Pairing and agent</span></span></div>
+      <div style="display: flex; gap: 12px; align-items: center; padding: 10px 8px"><span class="num" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid #3A4350; color: #9BA3AE; display: flex; align-items: center; justify-content: center">5</span><span>Review<br><span style="font-size: 12px; color: #9BA3AE">Confirm the destination</span></span></div>
+      <div style="display: flex; gap: 12px; align-items: center; padding: 10px 8px"><span class="num" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid #3A4350; color: #9BA3AE; display: flex; align-items: center; justify-content: center">6</span><span>Install and verify<br><span style="font-size: 12px; color: #9BA3AE">Pull, start, health</span></span></div>
+      <div style="margin-top: auto; font-size: 11px; color: #9BA3AE; line-height: 1.5">Progress saves on this computer. Credentials are never written to the setup record.<br><span class="num">v[0.2.0] · [BUILD TIME]</span></div>
+    </nav>
+    <main style="flex: 1; padding: 30px 36px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; min-width: 0">
+      <div class="kick">Watchdog Control / setup</div>
+      <h1 class="disp" style="margin: 0; font-size: 40px; line-height: 1; font-weight: 800; letter-spacing: -0.02em">A clear path to a running service.</h1>
+      <section style="border: 1px solid #F2A93B; border-radius: 14px; background: #1A1610; padding: 20px; display: flex; gap: 20px; align-items: center">
+        <div style="flex: 1"><div class="kick" style="color: #FFE2B0">Quick host</div><p style="margin: 6px 0 0; color: #D8CBB4; line-height: 1.55">Docker is ready on this computer. One click verifies the release, pulls the pinned image, writes this service's files and starts only Watchdog Control on <span class="num">[192.168.1.20]:8443</span>.</p></div>
+        <button type="button" style="min-height: 52px; padding: 0 22px; border-radius: 12px; border: 0; background: #F2A93B; color: #0E1116; font-weight: 600; white-space: nowrap">Host on this computer</button>
+      </section>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <section style="border: 1px solid #2A323D; border-radius: 12px; background: #161B22; padding: 16px"><strong>Before setup</strong><p style="margin: 6px 0 0; color: #9BA3AE; font-size: 13px; line-height: 1.5">Changes Docker resources on the active context only. Unrelated containers and existing data are never removed.</p></section>
+        <section style="border: 1px solid #2A323D; border-radius: 12px; background: #161B22; padding: 16px"><strong>What it will not do</strong><p style="margin: 6px 0 0; color: #9BA3AE; font-size: 13px; line-height: 1.5">No arbitrary commands, no secrets in logs, no computer restart. Differing files are backed up before replacement.</p></section>
+      </div>
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 12px">
+        <div role="status" style="display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 10px; background: #13201A; border: 1px solid #2D5A42; color: #7FD9A8; font-size: 13px"><span style="width: 9px; height: 9px; border-radius: 50%; background: #4CC38A"></span>Release [v0.2.0] verified. No changes made yet.</div>
+        <div style="display: flex; justify-content: space-between"><button type="button" disabled style="min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid #2A323D; background: transparent; color: #6B7380">Back</button><div style="display: flex; gap: 8px"><button type="button" style="min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid #2A323D; background: transparent; color: #E8EAED">Cancel</button><a href="Setup-progress.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 22px; border-radius: 10px; background: #E8EAED; color: #0E1116; font-weight: 600; text-decoration: none">Next</a></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":780}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

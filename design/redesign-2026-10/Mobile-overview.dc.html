@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Overview on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=IBM+Plex+Sans:wght@400;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+.kick{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9BA3AE}
+.num{font-family:'JetBrains Mono',monospace}
+.disp{font-family:'Bricolage Grotesque',sans-serif}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0E1116; color: #E8EAED; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; display: flex; flex-direction: column">
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #2A323D; background: #11151B">
+    <button type="button" aria-label="Open menu" style="min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #E8EAED">☰</button>
+    <span class="disp" style="font-weight: 800; font-size: 17px">Watchdog Control</span>
+    <button type="button" aria-label="Command palette" style="min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #F2A93B" class="num">›_</button>
+  </header>
+  <div style="flex: 1; padding: 18px 16px; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+    <div class="kick">Overview · [12 s] ago</div>
+    <h1 class="disp" style="margin: 0; font-size: 30px; line-height: 1.05; font-weight: 800">[HOST NAME 1] is on watch</h1>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <section style="border: 1px solid #2A323D; border-radius: 12px; background: #161B22; padding: 14px"><div class="kick">CPU</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px">[CPU]%</div></section>
+      <section style="border: 1px solid #2A323D; border-radius: 12px; background: #161B22; padding: 14px"><div class="kick">Memory</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px">[MEM]%</div></section>
+      <section style="border: 1px solid #2A323D; border-radius: 12px; background: #161B22; padding: 14px"><div class="kick">Uptime</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px">[D]d</div></section>
+      <section style="border: 1px solid #2A323D; border-radius: 12px; background: #161B22; padding: 14px"><div class="kick">Warnings</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px; color: #F2A93B">[N]</div></section>
+    </div>
+    <section style="border: 1px solid #F2A93B; border-radius: 12px; background: #2A2113; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+      <div class="kick" style="color: #FFE2B0">Slop Machine sign-in</div>
+      <div class="num" style="font-size: 28px; letter-spacing: 0.12em; text-align: center; color: #FFE2B0">[ABCD-1234]</div>
+      <button type="button" style="min-height: 44px; border-radius: 10px; border: 0; background: #F2A93B; color: #0E1116; font-weight: 600">Open sign-in page</button>
+    </section>
+    <button type="button" style="min-height: 48px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #E8EAED">Request fresh inventory</button>
+  </div>
+  <nav aria-label="Main" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid #2A323D; background: #11151B">
+    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #F2A93B">Overview</button>
+    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #9BA3AE">Services</button>
+    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #9BA3AE">Remote</button>
+    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #9BA3AE">Settings</button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

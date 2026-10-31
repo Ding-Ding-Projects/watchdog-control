@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Services with search tools</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1116}
+a{color:#F2A93B}a:hover{color:#FFC56B}
+.kick{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9BA3AE}
+.num{font-family:'JetBrains Mono',monospace}
+.disp{font-family:'Bricolage Grotesque',sans-serif}
+button,input,textarea{font:inherit}
+</style>
+</helmet>
+<div style="min-height: 1180px; background: #0E1116; color: #E8EAED; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; padding: 28px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; position: relative">
+  <a href="Main.dc.html" style="font-size: 13px; text-decoration: none">← Overview</a>
+  <div>
+    <div class="kick">Watch · [HOST NAME 1]</div>
+    <h1 class="disp" style="margin: 6px 0 0; font-size: 40px; font-weight: 800; letter-spacing: -0.02em">Services</h1>
+  </div>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+    <div style="flex: 1 1 320px; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px 0 12px; border-radius: 10px; border: 1px solid #F2A93B; background: #11151B">
+      <label for="s-q" style="position: absolute; left: -9999px">Search services</label>
+      <input id="s-q" class="num" value="^(Win|Wua)" style="flex: 1; min-width: 0; background: transparent; border: 0; color: #FFE2B0; outline: none">
+      <span class="num" style="font-size: 11px; color: #0E1116; background: #F2A93B; border-radius: 6px; padding: 3px 7px">REGEX gi</span>
+    </div>
+    <button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #E8EAED">Running ▾</button>
+    <button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #E8EAED">Select</button>
+    <span class="num" style="color: #9BA3AE; font-size: 12px">[6] of [212] services</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; align-items: start">
+    <div style="overflow-x: auto; border: 1px solid #2A323D; border-radius: 14px; background: #161B22">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px">
+        <thead><tr><th class="kick" style="text-align: left; padding: 12px 14px; border-bottom: 1px solid #2A323D">Service</th><th class="kick" style="text-align: left; padding: 12px 14px; border-bottom: 1px solid #2A323D">State</th><th class="kick" style="text-align: left; padding: 12px 14px; border-bottom: 1px solid #2A323D">Startup</th><th class="kick" style="text-align: right; padding: 12px 14px; border-bottom: 1px solid #2A323D">Actions</th></tr></thead>
+        <tbody>
+          <tr><td style="padding: 12px 14px; border-bottom: 1px solid #222934">[Service display name]<br><span class="num" style="font-size: 11px; color: #9BA3AE">[ServiceId]</span></td><td style="padding: 12px 14px; border-bottom: 1px solid #222934; color: #4CC38A">● Running</td><td style="padding: 12px 14px; border-bottom: 1px solid #222934">Automatic</td><td style="padding: 12px 14px; border-bottom: 1px solid #222934; text-align: right"><button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #2A323D; background: #1D232C; color: #E8EAED">Restart</button> <button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #FF6B5B; background: transparent; color: #FFB3A8">Stop</button></td></tr>
+          <tr><td style="padding: 12px 14px; border-bottom: 1px solid #222934">[Service display name]<br><span class="num" style="font-size: 11px; color: #9BA3AE">[ServiceId]</span></td><td style="padding: 12px 14px; border-bottom: 1px solid #222934; color: #9BA3AE">○ Stopped</td><td style="padding: 12px 14px; border-bottom: 1px solid #222934">Manual</td><td style="padding: 12px 14px; border-bottom: 1px solid #222934; text-align: right"><button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 8px; border: 0; background: #F2A93B; color: #0E1116">Start</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <section aria-labelledby="rx-h" style="border: 1px solid #F2A93B; border-radius: 14px; background: #161B22; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+      <h2 id="rx-h" class="disp" style="margin: 0; font-size: 20px">Regular expression builder</h2>
+      <label style="display: flex; flex-direction: column; gap: 6px"><span class="kick">Pattern</span><input class="num" value="^(Win|Wua)" style="min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #2A323D; background: #0E1116; color: #E8EAED"></label>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px" role="group" aria-label="Flags">
+        <button type="button" aria-pressed="true" class="num" style="min-height: 36px; min-width: 40px; border-radius: 8px; border: 1px solid #F2A93B; background: #2A2113; color: #FFE2B0">g</button>
+        <button type="button" aria-pressed="true" class="num" style="min-height: 36px; min-width: 40px; border-radius: 8px; border: 1px solid #F2A93B; background: #2A2113; color: #FFE2B0">i</button>
+        <button type="button" aria-pressed="false" class="num" style="min-height: 36px; min-width: 40px; border-radius: 8px; border: 1px solid #2A323D; background: transparent; color: #9BA3AE">m</button>
+        <button type="button" aria-pressed="false" class="num" style="min-height: 36px; min-width: 40px; border-radius: 8px; border: 1px solid #2A323D; background: transparent; color: #9BA3AE">s</button>
+        <button type="button" aria-pressed="false" class="num" style="min-height: 36px; min-width: 40px; border-radius: 8px; border: 1px solid #2A323D; background: transparent; color: #9BA3AE">u</button>
+      </div>
+      <div class="kick">Insert</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px">
+        <button type="button" class="num" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid #2A323D; background: #1D232C; color: #E8EAED">^ start</button>
+        <button type="button" class="num" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid #2A323D; background: #1D232C; color: #E8EAED">$ end</button>
+        <button type="button" class="num" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid #2A323D; background: #1D232C; color: #E8EAED">\d digit</button>
+        <button type="button" class="num" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid #2A323D; background: #1D232C; color: #E8EAED">(a|b) either</button>
+        <button type="button" class="num" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid #2A323D; background: #1D232C; color: #E8EAED">.* anything</button>
+      </div>
+      <label style="display: flex; flex-direction: column; gap: 6px"><span class="kick">Test text</span><textarea rows="3" class="num" style="padding: 10px 12px; border-radius: 10px; border: 1px solid #2A323D; background: #0E1116; color: #E8EAED">[sample service names]</textarea></label>
+      <div role="status" style="padding: 10px 12px; border-radius: 10px; background: #13201A; border: 1px solid #2D5A42; color: #7FD9A8; font-size: 13px">Valid pattern · [3] matches in the test text</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap"><button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #F2A93B; color: #0E1116; font-weight: 600">Apply</button><button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #2A323D; background: transparent; color: #E8EAED">Use plain text</button></div>
+    </section>
+  </div>
+  <section aria-label="Command palette" style="max-width: 640px; width: 100%; align-self: center; margin-top: 10px; border: 1px solid #3A4350; border-radius: 16px; background: #161B22; box-shadow: 0 30px 80px rgba(0,0,0,.55); overflow: hidden">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #2A323D">
+      <span class="num" style="color: #F2A93B">›</span>
+      <label for="pal" style="position: absolute; left: -9999px">Command</label>
+      <input id="pal" value="rest" style="flex: 1; background: transparent; border: 0; color: #E8EAED; font-size: 16px; outline: none">
+      <span class="num" style="font-size: 11px; color: #9BA3AE">Ctrl Shift F</span>
+    </div>
+    <ul style="list-style: none; margin: 0; padding: 6px">
+      <li style="display: flex; justify-content: space-between; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; background: #2A2113; color: #FFE2B0">Restart service…<span class="kick">Services</span></li>
+      <li style="display: flex; justify-content: space-between; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px">Request fresh inventory<span class="kick">Host</span></li>
+      <li style="display: flex; justify-content: space-between; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px">Restart computer…<span class="kick" style="color: #FFB3A8">Power</span></li>
+      <li style="display: flex; justify-content: space-between; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px">Reset browser preferences<span class="kick">Settings</span></li>
+    </ul>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
