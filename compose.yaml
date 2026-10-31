@@ -11,6 +11,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       WATCHDOG_DATA_PATH: /var/lib/watchdog-control
+      WATCHDOG_BIND_ADDRESS: 0.0.0.0
+      WATCHDOG_PORT: "8443"
+      WATCHDOG_TUNNEL_ENABLED: "${WATCHDOG_TUNNEL_ENABLED:-false}"
+      WATCHDOG_NOTIFICATIONS_ENABLED: "false"
+      WATCHDOG_TLS_CA_FILE: /run/secrets/watchdog_tls_ca
       WATCHDOG_TLS_CERTIFICATE_FILE: /run/secrets/watchdog_tls_certificate
       WATCHDOG_TLS_CERTIFICATE_PASSWORD_FILE: /run/secrets/watchdog_tls_password
       WATCHDOG_PAIRING_CODE_FILE: /run/secrets/watchdog_pairing_code
@@ -21,17 +26,20 @@ services:
         target: /var/lib/watchdog-control
     secrets:
       - watchdog_tls_certificate
+      - watchdog_tls_ca
       - watchdog_tls_password
       - watchdog_pairing_code
       - watchdog_agent_enrollment_code
     healthcheck:
-      test: ["CMD", "dotnet", "Watchdog.Web.dll", "--healthcheck"]
+      test: ["CMD", "/opt/watchdog-tools/node", "/app/container/healthcheck.cjs"]
       interval: 20s
-      timeout: 5s
-      start_period: 20s
+      timeout: 30s
+      start_period: 30s
       retries: 3
 
 secrets:
+  watchdog_tls_ca:
+    file: ${WATCHDOG_TLS_CA_HOST_FILE:?Set WATCHDOG_TLS_CA_HOST_FILE to the matching public certificate}
   watchdog_tls_certificate:
     file: ${WATCHDOG_TLS_CERTIFICATE_HOST_FILE:?Set WATCHDOG_TLS_CERTIFICATE_HOST_FILE}
   watchdog_tls_password:

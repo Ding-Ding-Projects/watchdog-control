@@ -1,0 +1,13 @@
+# Explicit opt-in override. Never put the webhook value in this file or in .env.
+services:
+  watchdog:
+    environment:
+      WATCHDOG_TUNNEL_ENABLED: "true"
+      WATCHDOG_NOTIFICATIONS_ENABLED: "true"
+      WATCHDOG_DISCORD_WEBHOOK_FILE: /run/secrets/watchdog_discord_webhook
+    secrets:
+      - watchdog_discord_webhook
+
+secrets:
+  watchdog_discord_webhook:
+    file: ${WATCHDOG_DISCORD_WEBHOOK_HOST_FILE:?Set the path of an existing protected webhook file}

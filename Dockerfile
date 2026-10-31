@@ -1,4 +1,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0.402@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2 AS build
+ARG TARGETARCH
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+COPY container/download-tools.sh /tmp/download-tools.sh
+RUN sh /tmp/download-tools.sh "$TARGETARCH"
 WORKDIR /src
 COPY global.json ./
 COPY src/Watchdog.Contracts/ src/Watchdog.Contracts/
@@ -13,14 +18,20 @@ ARG VCS_REF=unknown
 ARG SOURCE_URL=https://github.com/Ding-Ding-Projects/watchdog-control
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV WATCHDOG_DATA_PATH=/var/lib/watchdog-control
+ENV WATCHDOG_TUNNEL_ENABLED=false
+ENV WATCHDOG_NOTIFICATIONS_ENABLED=false
+ENV WATCHDOG_TLS_CA_FILE=/run/secrets/watchdog_tls_ca
 EXPOSE 8443
 LABEL org.opencontainers.image.title="Watchdog Control" \
       org.opencontainers.image.source=$SOURCE_URL \
       org.opencontainers.image.revision=$VCS_REF \
       org.opencontainers.image.version=$VERSION
 COPY --from=build --chown=$APP_UID:$APP_UID /out/ ./
+COPY --from=build /opt/watchdog-tools/ /opt/watchdog-tools/
+COPY --chown=$APP_UID:$APP_UID container/config.cjs container/healthcheck.cjs container/supervisor.cjs ./container/
+COPY --chown=$APP_UID:$APP_UID installer/Watchdog.SetupWizard/hosting/endpoint.cjs installer/Watchdog.SetupWizard/hosting/lifecycle.cjs installer/Watchdog.SetupWizard/hosting/notification.cjs ./installer/Watchdog.SetupWizard/hosting/
 RUN mkdir -p /var/lib/watchdog-control \
     && chown $APP_UID:$APP_UID /var/lib/watchdog-control
 USER $APP_UID
-HEALTHCHECK --interval=20s --timeout=5s --start-period=20s --retries=3 CMD ["dotnet", "Watchdog.Web.dll", "--healthcheck"]
-ENTRYPOINT ["dotnet", "Watchdog.Web.dll"]
+HEALTHCHECK --interval=20s --timeout=30s --start-period=30s --retries=3 CMD ["/opt/watchdog-tools/node", "/app/container/healthcheck.cjs"]
+ENTRYPOINT ["/opt/watchdog-tools/node", "/app/container/supervisor.cjs"]
