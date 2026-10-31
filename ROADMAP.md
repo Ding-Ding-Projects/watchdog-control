@@ -6,7 +6,8 @@
 - [x] Build and drive candidate 0.3.2 at `8e5eb3d`; verify native and temporary HTTPS endpoints, replacement tunnel recovery, saved startup registration and independent launcher execution after the wizard closes.
 - [ ] Verify startup after a new operating-system sign-in; no reboot or new-sign-in proof is claimed.
 - [ ] Verify Discord delivery only if the operator configures a protected destination; currently deliberately unconfigured.
-- [ ] Bundle and publish the container monitor with the controller, then verify a real container run on a supported host.
+- [x] Bundle and publish the AMD64 controller/monitor image; anonymous pull and export passed in CI.
+- [ ] Verify a real local Compose run, mounted files, endpoints, notification delivery and shutdown on a supported Docker host.
 - [x] Open [terminal design handoff #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) with complete required-feature acceptance criteria.
 - [ ] Implement and verify the reviewed terminal design and its authenticated PowerShell/CMD backend.
 
@@ -53,9 +54,9 @@
 
 - [x] Publish and anonymously pull the immutable image for source `5d19bb463b624a60b38aae360f607572fa003b8a`, digest `sha256:8a652e9a5a5704a62abd7940131e5de84a0c2ba8019088f6f0637638b8808466`.
 - [x] Publish and read back normal release `v0.1.1`. It targets source `1e39ae2647ab8959867f8050a340f0a3a1421cf4`, includes the corrected `default.env.example` name and `service.composeSha256`, and is neither draft nor prerelease.
-- [ ] Publish and verify the accepted normal release for candidate `0.3.2`, including the progress-save fix and every expected asset.
+- [x] Publish and verify normal release `v0.3.2`, exact source/tag `8e5eb3d`, nine assets, and non-draft/non-prerelease state.
 - [x] Verify the v0.1.1 embedded Compose checksum path through the real welcome-screen host action and verify the launched container's HTTPS health returned HTTP 200.
-- [ ] Verify the accepted 0.3.2 release checksum, bundled Compose bytes, downloadable image archive, and all release assets.
+- [x] Verify accepted 0.3.2 asset downloads and hashes in successful run `41241125480`, including the setup file, manifest, Compose and image archive.
 - [ ] Verify owner pairing, certificate import, and a real client connection from a second device through the intended private LAN URL.
 
 ## 4. Documentation and remaining acceptance

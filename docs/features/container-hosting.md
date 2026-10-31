@@ -47,4 +47,13 @@ On container stop, the supervisor sends termination only to its owned children, 
 
 The image retains the existing digest-pinned .NET build/runtime bases. Linux Node.js `24.22.1` and `cloudflared` `2026.10.7` are downloaded over HTTPS and checked against fixed SHA-256 values before extraction or installation. `container/tools.json` records the reviewed AMD64/ARM64 inventory. Node digests were read from the [official checksum manifest](https://nodejs.org/dist/v24.22.1/SHASUMS256.txt); tunnel digests were read from the [official release assets](https://github.com/cloudflare/cloudflared/releases/tag/2026.10.7). The existing release workflow publishes `linux/amd64`; ARM64 download pins do not claim an ARM64 release exists.
 
-Focused local checks cover opt-in defaults, credential source boundaries, certificate identity rejection, status-field filtering, notification delivery bounds, recovery limits, and packaging invariants. Source and unit checks are not container execution proof. Docker is unavailable on the current verification host, so image build, Compose pull/start, non-root mounted-file access, local/public endpoint verification, notification delivery, and container shutdown remain **unverified** until run on a supported Docker host. Publication and immutable-image availability are separate pending checks.
+Focused local checks cover opt-in defaults, credential source boundaries, certificate identity rejection, status-field filtering, notification delivery bounds, recovery limits, and packaging invariants. Source and unit checks are not container execution proof. Docker is unavailable on the current verification host, so local Compose pull/start, non-root mounted-file access, container local/public endpoint verification, notification delivery, and container shutdown remain **unverified** until run on a supported Docker host. Image build, publication, anonymous pull and export passed in CI.
+
+
+## Published 0.3.2 image
+
+[Normal release v0.3.2](https://github.com/Ding-Ding-Projects/watchdog-control/releases/tag/v0.3.2) is verified as neither draft nor prerelease, with nine assets and tag/source `8e5eb3d36e326d799b7ef05388ad85a34539f5df`. All four jobs in [release run 41241125480](https://github.com/Ding-Ding-Projects/watchdog-control/actions/runs/41241125480) succeeded, including asset download/hash verification and documentation deployment.
+
+The published AMD64 image is `ghcr.io/ding-ding-projects/watchdog-control@sha256:30158b083160bf3e6078f6a7ee2e76327867fddfd629d62285848f3528f46e07`. Anonymous image pull and export passed in CI. Local Docker execution remains unverified.
+
+The CI pull/export result proves image availability, not a running local Compose deployment or mounted credential delivery.
