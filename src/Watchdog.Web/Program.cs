@@ -32,18 +32,18 @@ if (args is ["--healthcheck"])
 }
 
 var builder = WebApplication.CreateBuilder(args);
+var certificatePath = builder.Configuration["WATCHDOG_TLS_CERTIFICATE_FILE"];
+var passwordPath = builder.Configuration["WATCHDOG_TLS_CERTIFICATE_PASSWORD_FILE"];
+// This scope outlives app.Run and disposes the imported key after Kestrel stops,
+// including startup failures. Do not dispose the certificate in the options callback.
+using var serverCertificate = !string.IsNullOrWhiteSpace(certificatePath) && !string.IsNullOrWhiteSpace(passwordPath)
+    ? LoadServerCertificate(certificatePath, passwordPath)
+    : null;
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = 1_048_576;
-    var certificatePath = builder.Configuration["WATCHDOG_TLS_CERTIFICATE_FILE"];
-    var passwordPath = builder.Configuration["WATCHDOG_TLS_CERTIFICATE_PASSWORD_FILE"];
-    if (!string.IsNullOrWhiteSpace(certificatePath) && !string.IsNullOrWhiteSpace(passwordPath))
+    if (serverCertificate is not null)
     {
-        var password = File.ReadAllText(passwordPath).Trim();
-        var certificate = X509CertificateLoader.LoadPkcs12FromFile(
-            certificatePath,
-            password,
-            X509KeyStorageFlags.EphemeralKeySet);
         var addressText = builder.Configuration["WATCHDOG_BIND_ADDRESS"] ?? "0.0.0.0";
         var portText = builder.Configuration["WATCHDOG_PORT"] ?? "8443";
         if (!IPAddress.TryParse(addressText, out var address) ||
@@ -52,7 +52,7 @@ builder.WebHost.ConfigureKestrel(options =>
         {
             throw new InvalidOperationException("A local/private bind address and a port between 1024 and 65535 are required.");
         }
-        options.Listen(address, port, listen => listen.UseHttps(certificate));
+        options.Listen(address, port, listen => listen.UseHttps(serverCertificate));
     }
     else if (!builder.Environment.IsDevelopment())
     {
@@ -513,6 +513,17 @@ app.MapGet("/api/hosts/{hostId}/codex", (
 
 app.MapFallbackToFile("index.html");
 app.Run();
+
+static X509Certificate2 LoadServerCertificate(string certificatePath, string passwordPath)
+{
+    var storageFlags = OperatingSystem.IsWindows()
+        ? X509KeyStorageFlags.UserKeySet
+        : X509KeyStorageFlags.EphemeralKeySet;
+    return X509CertificateLoader.LoadPkcs12FromFile(
+        certificatePath,
+        File.ReadAllText(passwordPath).Trim(),
+        storageFlags);
+}
 
 static void SetSessionCookie(HttpContext context, string value, IWebHostEnvironment environment)
 {
