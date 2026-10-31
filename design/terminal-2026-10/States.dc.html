@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Terminal session states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#05070B}
+.lab{font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#8A9AB0}
+.mono{font-family:'Geist Mono',monospace}.disp{font-family:'Chakra Petch',sans-serif}
+.spin{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid #22303F;border-top-color:#FFB23E;animation:spin .9s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="min-height: 1060px; background: #05070B; color: #E6EDF5; font-family: 'Geist', sans-serif; font-size: 14px; padding: 22px 28px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+  <div><div class="lab">State inventory</div><h1 class="disp" style="margin: 6px 0 0; font-size: 36px; font-weight: 700">Every session state, told honestly</h1></div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+    <section style="padding: 18px; border-radius: 16px; border: 1px solid #3DE8FF; background: rgba(61,232,255,.06); display: flex; flex-direction: column; gap: 8px">
+      <div class="lab" style="color: #3DE8FF">running · waiting for input</div>
+      <div class="mono" style="padding: 10px 12px; border-radius: 10px; background: #0A0E15; border: 1px solid #1A2533; font-size: 13px">Enter a value for Name: <span style="display: inline-block; width: 8px; height: 15px; background: #3DE8FF; vertical-align: -3px"></span></div>
+      <p style="margin: 0; color: #C9D4E2; font-size: 13px">The composer label changes to <strong>Send as input</strong>. Text goes to the running program's standard input and appears as an input entry.</p>
+    </section>
+    <section style="padding: 18px; border-radius: 16px; border: 1px solid rgba(255,178,62,.45); background: rgba(255,178,62,.06); display: flex; flex-direction: column; gap: 8px">
+      <div class="lab" style="color: #FFB23E">disconnected · reconnecting</div>
+      <div style="display: flex; align-items: center; gap: 10px"><span class="spin"></span><span>Lost contact with the controller. Retrying in <span class="mono">4 s</span>.</span></div>
+      <p style="margin: 0; color: #C9D4E2; font-size: 13px">The last known state stays visible with a grey <strong>unknown</strong> badge. A command is never shown as finished while disconnected. Output resumes from the last received entry.</p>
+    </section>
+    <section style="padding: 18px; border-radius: 16px; border: 1px solid rgba(255,77,106,.45); background: rgba(255,77,106,.06); display: flex; flex-direction: column; gap: 8px">
+      <div class="lab" style="color: #FF9DB0">stopped by you</div>
+      <div class="mono" style="align-self: flex-start; font-size: 12px; padding: 4px 12px; border-radius: 99px; border: 1px solid rgba(255,77,106,.4); color: #FF9DB0">Session stopped · process tree ended · 20:14:02</div>
+      <p style="margin: 0; color: #C9D4E2; font-size: 13px">Stop ends the shell and every process it started. The transcript stays readable; Start again opens a fresh session with the same shell.</p>
+    </section>
+    <section style="padding: 18px; border-radius: 16px; border: 1px solid #22303F; background: rgba(16,23,34,.85); display: flex; flex-direction: column; gap: 8px">
+      <div class="lab">exited</div>
+      <div class="mono" style="align-self: flex-start; font-size: 12px; padding: 4px 12px; border-radius: 99px; border: 1px solid #22303F; color: #C9D4E2">Shell exited · code 0 · 20:20:41</div>
+      <p style="margin: 0; color: #C9D4E2; font-size: 13px">Shown when the shell ends by itself, for example after <span class="mono">exit</span>. The real exit code is reported.</p>
+    </section>
+    <section style="padding: 18px; border-radius: 16px; border: 1px solid #22303F; background: rgba(16,23,34,.85); display: flex; flex-direction: column; gap: 8px">
+      <div class="lab">expired</div>
+      <div class="mono" style="align-self: flex-start; font-size: 12px; padding: 4px 12px; border-radius: 99px; border: 1px solid #22303F; color: #C9D4E2">Stopped after 15 min without activity</div>
+      <p style="margin: 0; color: #C9D4E2; font-size: 13px">Idle sessions stop to free resources. Sessions also end when the controller restarts; the page says so instead of reconnecting forever.</p>
+    </section>
+    <section style="padding: 18px; border-radius: 16px; border: 1px solid rgba(255,178,62,.45); background: rgba(255,178,62,.06); display: flex; flex-direction: column; gap: 8px">
+      <div class="lab" style="color: #FFB23E">output limit reached</div>
+      <div class="mono" style="align-self: flex-start; font-size: 12px; padding: 4px 12px; border-radius: 99px; border: 1px solid rgba(255,178,62,.4); color: #FFB23E">Older output dropped · 2 MB kept</div>
+      <p style="margin: 0; color: #C9D4E2; font-size: 13px">The oldest entries are removed to stay within the limit and a marker shows where. The session keeps running.</p>
+    </section>
+    <section style="padding: 18px; border-radius: 16px; border: 1px solid #22303F; background: rgba(16,23,34,.85); display: flex; flex-direction: column; gap: 8px">
+      <div class="lab">unsupported</div>
+      <p style="margin: 0; color: #C9D4E2; font-size: 13px">Full-screen console programs (editors, <span class="mono">top</span>, interactive installers) need a real terminal. This page streams text only, so those programs may wait or misbehave. Stop the session if one hangs.</p>
+    </section>
+    <section style="padding: 18px; border-radius: 16px; border: 1px solid #22303F; background: rgba(16,23,34,.85); display: flex; flex-direction: column; gap: 8px">
+      <div class="lab">signed out</div>
+      <p style="margin: 0; color: #C9D4E2; font-size: 13px">Every terminal request needs the owner session. When it expires the page returns to sign in; sessions keep running until they stop or expire.</p>
+    </section>
+  </div>
+  <section style="padding: 16px 18px; border-radius: 16px; border: 1px solid #22303F; background: rgba(16,23,34,.85)">
+    <div class="lab">Inert output</div>
+    <p style="margin: 8px 0 0; color: #C9D4E2; font-size: 13px">All commands and output are plain text. HTML-like text, escape sequences and links are shown as characters and never become live elements.</p>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

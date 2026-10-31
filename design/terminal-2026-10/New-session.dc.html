@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Terminal capabilities and new session</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#05070B}
+.lab{font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#8A9AB0}
+.mono{font-family:'Geist Mono',monospace}.disp{font-family:'Chakra Petch',sans-serif}
+.card{animation:in .5s cubic-bezier(.2,.8,.2,1) both}.card:nth-child(2){animation-delay:.08s}
+@keyframes in{from{opacity:0;transform:translateY(10px)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: radial-gradient(1000px 560px at 75% -10%, rgba(61,232,255,.11), transparent 60%), #05070B; color: #E6EDF5; font-family: 'Geist', sans-serif; font-size: 14px; padding: 22px 28px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+  <div><div class="lab">Remote · terminal</div><h1 class="disp" style="margin: 6px 0 0; font-size: 40px; font-weight: 700">Start a session</h1><p style="margin: 8px 0 0; color: #A9B6C8; max-width: 760px">Shells found on the computer that will run your commands. Nothing starts until you choose one.</p></div>
+  <section style="display: flex; flex-wrap: wrap; gap: 18px; padding: 16px 18px; border-radius: 16px; border: 1px solid #22303F; background: rgba(16,23,34,.85)">
+    <div><div class="lab">Execution computer</div><div style="margin-top: 4px">Controller container</div></div>
+    <div><div class="lab">Platform</div><div class="mono" style="margin-top: 4px">Linux [x64]</div></div>
+    <div><div class="lab">Account</div><div class="mono" style="margin-top: 4px">[app]</div></div>
+    <div><div class="lab">Privileges</div><div style="margin-top: 4px">The controller's own, never elevated</div></div>
+  </section>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+    <section class="card" style="padding: 22px; border-radius: 18px; border: 1px solid rgba(61,232,255,.5); background: linear-gradient(135deg, rgba(61,232,255,.10), rgba(79,139,255,.04)); display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; justify-content: space-between"><h2 class="disp" style="margin: 0; font-size: 24px">PowerShell</h2><span class="mono" style="font-size: 12px; color: #7CFFB2">● available</span></div>
+      <div class="mono" style="font-size: 12px; color: #8A9AB0">[/usr/bin/pwsh] · [7.5.4]</div>
+      <p style="margin: 0; color: #C9D4E2">Keeps variables and the current folder between commands until the session stops.</p>
+      <button type="button" style="align-self: flex-start; min-height: 46px; padding: 0 20px; border-radius: 12px; border: 0; background: linear-gradient(135deg,#3DE8FF,#4F8BFF); color: #04121A; font: 600 14px 'Geist', sans-serif">Start PowerShell session</button>
+    </section>
+    <section class="card" style="padding: 22px; border-radius: 18px; border: 1px dashed #2C3B4D; background: rgba(255,255,255,.02); display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; justify-content: space-between"><h2 class="disp" style="margin: 0; font-size: 24px; color: #8A9AB0">CMD</h2><span class="mono" style="font-size: 12px; color: #FFB23E">unavailable</span></div>
+      <p style="margin: 0; color: #A9B6C8">Command Prompt needs Windows. This controller runs on Linux, so CMD cannot start here. It is offered when the controller runs on Windows.</p>
+      <button type="button" disabled style="align-self: flex-start; min-height: 46px; padding: 0 20px; border-radius: 12px; border: 1px solid #22303F; background: transparent; color: #56657A; font: inherit">Start CMD session</button>
+    </section>
+  </div>
+  <section style="padding: 16px 18px; border-radius: 16px; border: 1px solid #22303F; background: rgba(16,23,34,.85)">
+    <div class="lab">Enforced limits</div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 10px">
+      <div><div class="mono" style="font-size: 22px">4</div><div style="font-size: 12px; color: #8A9AB0">sessions per owner</div></div>
+      <div><div class="mono" style="font-size: 22px">16 KB</div><div style="font-size: 12px; color: #8A9AB0">per send</div></div>
+      <div><div class="mono" style="font-size: 22px">2 MB</div><div style="font-size: 12px; color: #8A9AB0">output kept per session</div></div>
+      <div><div class="mono" style="font-size: 22px">15 min</div><div style="font-size: 12px; color: #8A9AB0">idle before stop</div></div>
+    </div>
+  </section>
+  <section style="padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(255,178,62,.35); background: rgba(255,178,62,.06); color: #C9D4E2; font-size: 13px; line-height: 1.6">Commands and output are not written to the audit log or server logs. The audit log records only that a session started or stopped.</section>
+  <section style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px 20px; border-radius: 18px; border: 1px dashed #22303F; color: #8A9AB0; text-align: center">
+    <div class="lab">When no shell is found</div>
+    <div style="max-width: 560px">No supported shell was found on this computer. Install PowerShell where the controller runs, or run the controller on Windows for CMD. Nothing was started.</div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

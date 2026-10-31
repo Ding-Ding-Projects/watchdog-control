@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Terminal at phone width</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@700&amp;family=Geist:wght@400;600&amp;family=Geist+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#05070B}
+.lab{font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#8A9AB0}
+.mono{font-family:'Geist Mono',monospace}.disp{font-family:'Chakra Petch',sans-serif}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #05070B; color: #E6EDF5; font-family: 'Geist', sans-serif; font-size: 14px; display: flex; flex-direction: column">
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #1A2533"><span class="disp" style="font-size: 20px; font-weight: 700">Terminal</span><span class="mono" style="font-size: 11px; color: #FFB23E">container · Linux</span></header>
+  <div role="tablist" aria-label="Sessions" style="display: flex; gap: 6px; padding: 10px 14px; overflow-x: auto">
+    <button type="button" role="tab" aria-selected="true" style="flex: none; min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #3DE8FF; background: rgba(61,232,255,.1); color: #E6EDF5; font: inherit; white-space: nowrap">PowerShell · build</button>
+    <button type="button" role="tab" aria-selected="false" style="flex: none; min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #22303F; background: transparent; color: #A9B6C8; font: inherit; white-space: nowrap">PowerShell 2</button>
+    <button type="button" aria-label="New session" style="flex: none; min-width: 40px; min-height: 40px; border-radius: 10px; border: 1px dashed #2C3B4D; background: transparent; color: #3DE8FF; font: inherit">+</button>
+  </div>
+  <ol class="mono" style="list-style: none; margin: 0; padding: 4px 14px; flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; overflow: hidden">
+    <li style="align-self: flex-end; max-width: 85%; padding: 9px 12px; border-radius: 12px 12px 4px 12px; background: rgba(61,232,255,.14); border: 1px solid rgba(61,232,255,.45)">Get-Service | Select -First 3</li>
+    <li style="padding: 9px 12px; border-radius: 12px 12px 12px 4px; background: #0A0E15; border: 1px solid #1A2533; color: #C9D4E2; white-space: pre-wrap">[service output lines]</li>
+    <li style="align-self: center; font-size: 11px; color: #7CFFB2">Finished · succeeded</li>
+  </ol>
+  <div style="padding: 10px 12px 14px; border-top: 1px solid #1A2533; display: flex; flex-direction: column; gap: 8px">
+    <label for="m" style="position: absolute; left: -9999px">Command</label>
+    <textarea id="m" rows="2" class="mono" placeholder="Type a command" style="resize: none; padding: 10px; border-radius: 12px; border: 1px solid #3DE8FF; background: #0A0E15; color: #E6EDF5; font-size: 13px"></textarea>
+    <div style="display: flex; gap: 8px"><button type="button" style="flex: 1; min-height: 44px; border-radius: 12px; border: 1px solid rgba(255,77,106,.45); background: transparent; color: #FF9DB0; font: inherit">Stop</button><button type="button" style="flex: 2; min-height: 44px; border-radius: 12px; border: 0; background: linear-gradient(135deg,#3DE8FF,#4F8BFF); color: #04121A; font: 600 14px 'Geist', sans-serif">Send</button></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
