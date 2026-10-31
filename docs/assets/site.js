@@ -1,7 +1,7 @@
 (() => {
   const data=window.WATCHDOG_DOCS;
   const $=id=>document.getElementById(id);
-  const featureSlugs=['host-health','services-processes','event-logs','storage-network','updates-firewall','operation-catalog','power-actions','identity-audit','deployment-recovery','setup-assistant','http-api'];
+  const featureSlugs=['host-health','services-processes','event-logs','storage-network','updates-firewall','operation-catalog','power-actions','identity-audit','deployment-recovery','setup-assistant','native-hosting','container-hosting','http-api'];
   const wikiSlugs=data.wiki.map(page=>page.id);
   const featureSlugById=Object.fromEntries(featureSlugs.map(slug=>[slug,slug]));
   const storageKey='watchdog-docs-preferences-v1';
