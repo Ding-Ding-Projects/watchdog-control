@@ -8,42 +8,53 @@
 <body>
 <x-dc>
 <helmet>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=IBM+Plex+Sans:wght@400;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
 <style>
-body{margin:0;background:#0E1116}
-.kick{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9BA3AE}
-.num{font-family:'JetBrains Mono',monospace}
-.disp{font-family:'Bricolage Grotesque',sans-serif}
+body{margin:0;background:#05070B}
+.kick{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#8A9AB0}
+.num{font-family:'Geist Mono',monospace}
+.disp{font-family:'Chakra Petch',sans-serif}
 button{font:inherit}
+
+.cc{background:radial-gradient(1100px 600px at 75% -10%,rgba(61,232,255,.12),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(124,92,255,.10),transparent 60%);background-color:#05070B;position:relative;overflow:hidden}
+.cc:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(120,160,200,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(120,160,200,.06) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;mask-image:linear-gradient(#000,transparent 85%)}
+.cc>*{position:relative}
+section{backdrop-filter:blur(14px);box-shadow:0 20px 60px rgba(0,0,0,.4);animation:boot .7s cubic-bezier(.2,.8,.2,1) both;transition:border-color .25s,box-shadow .25s}
+section:hover{box-shadow:0 0 36px rgba(61,232,255,.10),0 20px 60px rgba(0,0,0,.4)}
+section:nth-of-type(2){animation-delay:.08s}section:nth-of-type(3){animation-delay:.16s}section:nth-of-type(4){animation-delay:.24s}section:nth-of-type(5){animation-delay:.32s}
+@keyframes boot{from{opacity:0;transform:translateY(14px) scale(.985);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+button,a{transition:transform .15s,background .2s,border-color .2s,box-shadow .2s}
+button:hover,a:hover{transform:translateY(-1px)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </helmet>
-<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0E1116; color: #E8EAED; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; display: flex; flex-direction: column">
-  <header style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #2A323D; background: #11151B">
-    <button type="button" aria-label="Open menu" style="min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #E8EAED">☰</button>
+<div class="cc" style="width: 390px; height: 844px; box-sizing: border-box; background: #05070B; color: #E6EDF5; font-family: 'Geist', sans-serif; font-size: 14px; display: flex; flex-direction: column">
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #22303F; background: #0A0E15">
+    <button type="button" aria-label="Open menu" style="min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid #22303F; background: #101722; color: #E6EDF5">☰</button>
     <span class="disp" style="font-weight: 800; font-size: 17px">Watchdog Control</span>
-    <button type="button" aria-label="Command palette" style="min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #F2A93B" class="num">›_</button>
+    <button type="button" aria-label="Command palette" style="min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid #22303F; background: #101722; color: #3DE8FF" class="num">›_</button>
   </header>
   <div style="flex: 1; padding: 18px 16px; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
     <div class="kick">Overview · [12 s] ago</div>
     <h1 class="disp" style="margin: 0; font-size: 30px; line-height: 1.05; font-weight: 800">[HOST NAME 1] is on watch</h1>
     <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
-      <section style="border: 1px solid #2A323D; border-radius: 12px; background: #161B22; padding: 14px"><div class="kick">CPU</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px">[CPU]%</div></section>
-      <section style="border: 1px solid #2A323D; border-radius: 12px; background: #161B22; padding: 14px"><div class="kick">Memory</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px">[MEM]%</div></section>
-      <section style="border: 1px solid #2A323D; border-radius: 12px; background: #161B22; padding: 14px"><div class="kick">Uptime</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px">[D]d</div></section>
-      <section style="border: 1px solid #2A323D; border-radius: 12px; background: #161B22; padding: 14px"><div class="kick">Warnings</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px; color: #F2A93B">[N]</div></section>
+      <section style="border: 1px solid #22303F; border-radius: 12px; background: #101722; padding: 14px"><div class="kick">CPU</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px">[CPU]%</div></section>
+      <section style="border: 1px solid #22303F; border-radius: 12px; background: #101722; padding: 14px"><div class="kick">Memory</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px">[MEM]%</div></section>
+      <section style="border: 1px solid #22303F; border-radius: 12px; background: #101722; padding: 14px"><div class="kick">Uptime</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px">[D]d</div></section>
+      <section style="border: 1px solid #22303F; border-radius: 12px; background: #101722; padding: 14px"><div class="kick">Warnings</div><div class="num" style="font-size: 26px; font-weight: 600; margin-top: 6px; color: #3DE8FF">[N]</div></section>
     </div>
-    <section style="border: 1px solid #F2A93B; border-radius: 12px; background: #2A2113; padding: 14px; display: flex; flex-direction: column; gap: 8px">
-      <div class="kick" style="color: #FFE2B0">Slop Machine sign-in</div>
-      <div class="num" style="font-size: 28px; letter-spacing: 0.12em; text-align: center; color: #FFE2B0">[ABCD-1234]</div>
-      <button type="button" style="min-height: 44px; border-radius: 10px; border: 0; background: #F2A93B; color: #0E1116; font-weight: 600">Open sign-in page</button>
+    <section style="border: 1px solid #3DE8FF; border-radius: 12px; background: #0C2A33; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+      <div class="kick" style="color: #E6FBFF">Slop Machine sign-in</div>
+      <div class="num" style="font-size: 28px; letter-spacing: 0.12em; text-align: center; color: #E6FBFF">[ABCD-1234]</div>
+      <button type="button" style="min-height: 44px; border-radius: 10px; border: 0; background: linear-gradient(135deg,#3DE8FF,#4F8BFF); color: #04121A; box-shadow: 0 0 24px rgba(61,232,255,.35); font-weight: 600">Open sign-in page</button>
     </section>
-    <button type="button" style="min-height: 48px; border-radius: 10px; border: 1px solid #2A323D; background: #161B22; color: #E8EAED">Request fresh inventory</button>
+    <button type="button" style="min-height: 48px; border-radius: 10px; border: 1px solid #22303F; background: #101722; color: #E6EDF5">Request fresh inventory</button>
   </div>
-  <nav aria-label="Main" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid #2A323D; background: #11151B">
-    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #F2A93B">Overview</button>
-    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #9BA3AE">Services</button>
-    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #9BA3AE">Remote</button>
-    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #9BA3AE">Settings</button>
+  <nav aria-label="Main" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid #22303F; background: #0A0E15">
+    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #3DE8FF">Overview</button>
+    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #8A9AB0">Services</button>
+    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #8A9AB0">Remote</button>
+    <button type="button" style="min-height: 60px; border: 0; background: transparent; color: #8A9AB0; width: 205px; height: 8px">Settings</button>
   </nav>
 </div>
 </x-dc>

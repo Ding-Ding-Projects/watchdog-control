@@ -10,25 +10,28 @@ any product behavior. Implementation status lives in `ROADMAP.md` and `HANDOFF.m
 
 ## Visual direction
 
-"Night shift control room": an ink ground, a single signal-amber accent used for the active
-state and primary action, and a check-in pulse line as the signature element.
+"Command centre": a deep-space ground with a faint measurement grid, frosted glass panels that
+boot in with a short staggered rise, and live motion that carries meaning: a radar sweep over
+the connected computers, a scrolling telemetry waveform, ring gauges that fill to their reading,
+packets travelling along the remote link, and a glowing countdown ring for one-time codes. Every
+animation has a reduced-motion path that shows the same information without movement.
 
-| Token | Dark (default) | Light ("day shift") |
+| Token | Value | Use |
 | --- | --- | --- |
-| Ground | `#0E1116` | `#F5F2EA` |
-| Raised surface | `#161B22` | `#FFFDF8` |
-| Rail and header | `#11151B` | `#EFEADF` |
-| Hairline | `#2A323D` | `#DDD6C6` |
-| Text | `#E8EAED` | `#15181D` |
-| Muted text | `#9BA3AE` | `#5C574D` |
-| Accent | `#F2A93B` | `#8A4F00` |
-| Healthy | `#4CC38A` | `#1E7A4C` |
-| Danger | `#FF6B5B` | `#B3261E` |
-| Information | `#5BC8E6` | `#0F6A85` |
+| Ground | `#05070B` | Page background with cyan and violet glows |
+| Glass panel | `rgba(22,30,42,.78)` to `rgba(12,17,25,.78)` | Panels, with a 14 px backdrop blur |
+| Hairline | `rgba(120,170,220,.16)` | Panel and control borders |
+| Text | `#E6EDF5` | Primary text |
+| Muted text | `#8A9AB0` | Labels and secondary text |
+| Signal cyan | `#3DE8FF` to `#4F8BFF` | Primary action, focus, active state, live data |
+| Violet | `#7C5CFF` | Secondary data series and the relay node |
+| Healthy | `#7CFFB2` | Online, succeeded, signed in |
+| Caution | `#FFB23E` | Warnings and capacity pressure |
+| Danger | `#FF4D6A` | Power actions and failures |
 
-Type: Bricolage Grotesque for display headings, IBM Plex Sans for body text, JetBrains Mono for
-every number, code, identifier and small uppercase label. The shipped dashboard vendors these
-fonts so it never loads anything from the internet.
+Type: Chakra Petch for display headings, Geist for body text, Geist Mono for every number, code,
+identifier and small uppercase label. The shipped dashboard vendors these fonts so it never loads
+anything from the internet.
 
 ## Artboards
 

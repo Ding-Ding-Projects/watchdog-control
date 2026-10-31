@@ -8,52 +8,63 @@
 <body>
 <x-dc>
 <helmet>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
 <style>
-body{margin:0;background:#F5F2EA}
-a{color:#8A4F00}a:hover{color:#5E3600}
-.kick{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5C574D}
-.num{font-family:'JetBrains Mono',monospace}
-.disp{font-family:'Bricolage Grotesque',sans-serif}
+body{margin:0;background:#05070B}
+a{color:#3DE8FF}a:hover{color:#9AF3FF}
+.kick{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#8A9AB0}
+.num{font-family:'Geist Mono',monospace}
+.disp{font-family:'Chakra Petch',sans-serif}
 button,input{font:inherit}
+
+.cc{background:radial-gradient(1100px 600px at 75% -10%,rgba(61,232,255,.12),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(124,92,255,.10),transparent 60%);background-color:#05070B;position:relative;overflow:hidden}
+.cc:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(120,160,200,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(120,160,200,.06) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;mask-image:linear-gradient(#000,transparent 85%)}
+.cc>*{position:relative}
+section{backdrop-filter:blur(14px);box-shadow:0 20px 60px rgba(0,0,0,.4);animation:boot .7s cubic-bezier(.2,.8,.2,1) both;transition:border-color .25s,box-shadow .25s}
+section:hover{box-shadow:0 0 36px rgba(61,232,255,.10),0 20px 60px rgba(0,0,0,.4)}
+section:nth-of-type(2){animation-delay:.08s}section:nth-of-type(3){animation-delay:.16s}section:nth-of-type(4){animation-delay:.24s}section:nth-of-type(5){animation-delay:.32s}
+@keyframes boot{from{opacity:0;transform:translateY(14px) scale(.985);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+button,a{transition:transform .15s,background .2s,border-color .2s,box-shadow .2s}
+button:hover,a:hover{transform:translateY(-1px)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </helmet>
-<div style="min-height: 1100px; background: #F5F2EA; color: #15181D; font-family: 'IBM Plex Sans', sans-serif; font-size: 15px">
-  <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 40px; border-bottom: 1px solid #DDD6C6">
-    <div style="display: flex; align-items: center; gap: 10px"><svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="8" fill="#15181D"></rect><path d="M8 19l3-8 4 6 4-6 3 8" stroke="#F2A93B" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="disp" style="font-weight: 800; font-size: 18px">Watchdog Control</span><span class="kick">docs</span></div>
+<div class="cc" style="min-height: 1100px; background: #05070B; color: #E6EDF5; font-family: 'Geist', sans-serif; font-size: 15px">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 40px; border-bottom: 1px solid #22303F">
+    <div style="display: flex; align-items: center; gap: 10px"><svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="8" fill="#E6EDF5"></rect><path d="M8 19l3-8 4 6 4-6 3 8" stroke="#3DE8FF" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="disp" style="font-weight: 800; font-size: 18px">Watchdog Control</span><span class="kick">docs</span></div>
     <nav aria-label="Documentation" style="display: flex; flex-wrap: wrap; gap: 4px">
-      <a href="#" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 9px; text-decoration: none; color: #15181D">Guides</a>
-      <a href="#" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 9px; text-decoration: none; color: #15181D">Features</a>
-      <a href="#" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 9px; text-decoration: none; color: #15181D">Security</a>
-      <a href="#" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 9px; text-decoration: none; color: #15181D">API</a>
-      <a href="#" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 9px; text-decoration: none; color: #15181D">Settings</a>
+      <a href="#" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 9px; text-decoration: none; color: #E6EDF5">Guides</a>
+      <a href="#" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 9px; text-decoration: none; color: #E6EDF5">Features</a>
+      <a href="#" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 9px; text-decoration: none; color: #E6EDF5">Security</a>
+      <a href="#" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 9px; text-decoration: none; color: #E6EDF5">API</a>
+      <a href="#" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 9px; text-decoration: none; color: #E6EDF5">Settings</a>
     </nav>
   </header>
   <section style="padding: 64px 40px 40px; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-end; justify-content: space-between">
     <div style="flex: 1 1 560px">
       <div class="kick">Open-source Windows host management</div>
       <h1 class="disp" style="margin: 12px 0 0; font-size: 76px; line-height: 0.95; font-weight: 800; letter-spacing: -0.035em">Watch every<br>computer you own.</h1>
-      <p style="margin: 20px 0 0; max-width: 560px; font-size: 18px; line-height: 1.6; color: #3B3F46">A private dashboard on your own network. Typed host actions, typed confirmations, a full audit trail, and now Slop Machine remote control with sign-in assist.</p>
+      <p style="margin: 20px 0 0; max-width: 560px; font-size: 18px; line-height: 1.6; color: #A9B6C8">A private dashboard on your own network. Typed host actions, typed confirmations, a full audit trail, and now Slop Machine remote control with sign-in assist.</p>
       <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px">
-        <a href="#" style="display: inline-flex; align-items: center; min-height: 52px; padding: 0 22px; border-radius: 12px; background: #15181D; color: #F5F2EA; text-decoration: none; font-weight: 600">Download setup [v0.2.0]</a>
-        <a href="#" style="display: inline-flex; align-items: center; min-height: 52px; padding: 0 22px; border-radius: 12px; border: 1px solid #15181D; color: #15181D; text-decoration: none">Read the quick start</a>
+        <a href="#" style="display: inline-flex; align-items: center; min-height: 52px; padding: 0 22px; border-radius: 12px; background: #E6EDF5; color: #05070B; text-decoration: none; font-weight: 600">Download setup [v0.2.0]</a>
+        <a href="#" style="display: inline-flex; align-items: center; min-height: 52px; padding: 0 22px; border-radius: 12px; border: 1px solid #E6EDF5; color: #E6EDF5; text-decoration: none">Read the quick start</a>
       </div>
-      <p class="num" style="margin: 12px 0 0; font-size: 12px; color: #5C574D">SHA-256 [checksum] · [size] · verified from the release manifest</p>
+      <p class="num" style="margin: 12px 0 0; font-size: 12px; color: #8A9AB0">SHA-256 [checksum] · [size] · verified from the release manifest</p>
     </div>
-    <div style="flex: 1 1 380px; border-radius: 16px; background: #0E1116; padding: 20px; color: #E8EAED">
-      <div class="kick" style="color: #9BA3AE">Check-in pulse</div>
-      <svg viewBox="0 0 400 70" preserveAspectRatio="none" aria-hidden="true" style="width: 100%; height: 70px; margin-top: 8px"><path d="M0 46 H90 L102 46 L110 14 L121 60 L130 46 H250 L262 46 L270 18 L281 58 L290 46 H400" stroke="#F2A93B" stroke-width="2" fill="none"></path></svg>
-      <div class="num" style="font-size: 13px; color: #4CC38A">● [HOST NAME 1] online</div>
+    <div style="flex: 1 1 380px; border-radius: 16px; background: #0A0E15; padding: 20px; color: #E6EDF5">
+      <div class="kick" style="color: #8A9AB0">Check-in pulse</div>
+      <svg viewBox="0 0 400 70" preserveAspectRatio="none" aria-hidden="true" style="width: 100%; height: 70px; margin-top: 8px"><path d="M0 46 H90 L102 46 L110 14 L121 60 L130 46 H250 L262 46 L270 18 L281 58 L290 46 H400" stroke="#3DE8FF" stroke-width="2" fill="none"></path></svg>
+      <div class="num" style="font-size: 13px; color: #7CFFB2">● [HOST NAME 1] online</div>
     </div>
   </section>
   <section style="padding: 0 40px 24px">
-    <div style="display: flex; align-items: center; gap: 8px; max-width: 720px; min-height: 52px; padding: 0 8px 0 16px; border-radius: 12px; border: 1px solid #C9C0AC; background: #FFFDF8"><label for="d-q" style="position: absolute; left: -9999px">Search the documentation</label><input id="d-q" placeholder="Search guides, features and settings   ( / )" style="flex: 1; background: transparent; border: 0; outline: none; color: #15181D"><button type="button" aria-label="Open regular expression builder" class="num" style="min-height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #C9C0AC; background: transparent; color: #8A4F00">.*</button></div>
+    <div style="display: flex; align-items: center; gap: 8px; max-width: 720px; min-height: 52px; padding: 0 8px 0 16px; border-radius: 12px; border: 1px solid #2C3B4D; background: #101722"><label for="d-q" style="position: absolute; left: -9999px">Search the documentation</label><input id="d-q" placeholder="Search guides, features and settings   ( / )" style="flex: 1; background: transparent; border: 0; outline: none; color: #E6EDF5"><button type="button" aria-label="Open regular expression builder" class="num" style="min-height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #2C3B4D; background: transparent; color: #3DE8FF">.*</button></div>
   </section>
   <section style="padding: 16px 40px 56px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px">
-    <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 14px; background: #FFFDF8; border: 1px solid #DDD6C6; text-decoration: none; color: #15181D"><span class="kick">01 · Setup</span><strong class="disp" style="font-size: 22px">Host it in one click</strong><span style="color: #4A4F57; font-size: 14px">The portable assistant, quick host, and recovery when Docker or a port is not ready.</span></a>
-    <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 14px; background: #FFFDF8; border: 1px solid #DDD6C6; text-decoration: none; color: #15181D"><span class="kick">02 · Pair</span><strong class="disp" style="font-size: 22px">Pair a computer</strong><span style="color: #4A4F57; font-size: 14px">One-time agent codes, certificate pinning, and revoking a lost agent.</span></a>
-    <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 14px; background: #FFFDF8; border: 1px solid #DDD6C6; text-decoration: none; color: #15181D"><span class="kick">03 · Remote</span><strong class="disp" style="font-size: 22px">Slop Machine remote</strong><span style="color: #4A4F57; font-size: 14px">Sign the command-line tool in with a device code, start remote control, pair a phone.</span></a>
-    <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 14px; background: #FFFDF8; border: 1px solid #DDD6C6; text-decoration: none; color: #15181D"><span class="kick">04 · Operate</span><strong class="disp" style="font-size: 22px">Services, processes, power</strong><span style="color: #4A4F57; font-size: 14px">Typed operations, exact confirmation phrases, and what the audit log keeps.</span></a>
+    <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 14px; background: #101722; border: 1px solid #22303F; text-decoration: none; color: #E6EDF5"><span class="kick">01 · Setup</span><strong class="disp" style="font-size: 22px">Host it in one click</strong><span style="color: #A9B6C8; font-size: 14px">The portable assistant, quick host, and recovery when Docker or a port is not ready.</span></a>
+    <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 14px; background: #101722; border: 1px solid #22303F; text-decoration: none; color: #E6EDF5"><span class="kick">02 · Pair</span><strong class="disp" style="font-size: 22px">Pair a computer</strong><span style="color: #A9B6C8; font-size: 14px">One-time agent codes, certificate pinning, and revoking a lost agent.</span></a>
+    <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 14px; background: #101722; border: 1px solid #22303F; text-decoration: none; color: #E6EDF5"><span class="kick">03 · Remote</span><strong class="disp" style="font-size: 22px">Slop Machine remote</strong><span style="color: #A9B6C8; font-size: 14px">Sign the command-line tool in with a device code, start remote control, pair a phone.</span></a>
+    <a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 14px; background: #101722; border: 1px solid #22303F; text-decoration: none; color: #E6EDF5"><span class="kick">04 · Operate</span><strong class="disp" style="font-size: 22px">Services, processes, power</strong><span style="color: #A9B6C8; font-size: 14px">Typed operations, exact confirmation phrases, and what the audit log keeps.</span></a>
   </section>
 </div>
 </x-dc>
