@@ -35,6 +35,7 @@ const hosting = createHosting({ userData: app.getPath('userData'), secretDirecto
 
 let mainWindow;
 let currentOperation = null;
+let stateSaveQueue = Promise.resolve();
 let state = {
   schemaVersion: 1,
   lastStep: 0,
@@ -44,6 +45,7 @@ let state = {
   startupEnabled: false,
   hosting: null,
   lanAddresses: [],
+  networkMessage: null,
   lanBindAddress: '',
   storageDirectory: DEFAULT_STORAGE,
   composeDirectory: DEFAULT_COMPOSE,
@@ -103,12 +105,7 @@ async function loadState() {
   state.hostingMode = state.hostingMode === 'docker' ? 'docker' : 'native';
   state.hosting = await hosting.snapshot();
   if (state.hostingMode === 'native') state.verified = state.hosting.localReady;
-  state.lanAddresses = await getLanIpv4Addresses().catch(() => []);
-  if (!state.lanAddresses.includes(state.lanBindAddress)) {
-    const previousAddress = state.lanBindAddress;
-    state.lanBindAddress = state.lanAddresses[0] || '';
-    if (previousAddress) { state.startConfirmed = false; state.verified = false; }
-  }
+  await refreshNetwork();
   try {
     if (state.hostingMode === 'docker') state.release = await getProductRelease();
     state.releaseError = null;
@@ -119,16 +116,37 @@ async function loadState() {
   return publicState();
 }
 
+async function refreshNetwork() {
+  try {
+    state.lanAddresses = await getLanIpv4Addresses();
+    state.networkMessage = state.lanAddresses.length ? 'Private network interfaces were verified.' : 'No active physical adapter currently has a private IPv4 address. Connect the intended network and recheck.';
+  } catch (error) {
+    state.lanAddresses = [];
+    state.networkMessage = safeSummary(error.message);
+  }
+  if (!state.lanAddresses.includes(state.lanBindAddress)) {
+    if (state.lanBindAddress) { state.startConfirmed = false; state.verified = false; }
+    state.lanBindAddress = state.lanAddresses[0] || '';
+  }
+  return publicState();
+}
+
 async function saveState() {
   if (state.progressRecoveryWarning) return;
   const serializable = { ...state };
   delete serializable.pairingCode;
   const content = Buffer.from(`${JSON.stringify(serializable, null, 2)}\n`, 'utf8');
   if (content.length > MAX_STATE_BYTES) throw new Error('The setup record exceeds its safe size limit.');
-  await fs.mkdir(path.dirname(USER_DATA), { recursive: true });
-  const temporary = `${USER_DATA}.new`;
-  await fs.writeFile(temporary, content, { flag: 'w' });
-  await fs.rename(temporary, USER_DATA);
+  const write = async () => {
+    await fs.mkdir(path.dirname(USER_DATA), { recursive: true });
+    const temporary = `${USER_DATA}.${crypto.randomUUID()}.new`;
+    try {
+      await fs.writeFile(temporary, content, { flag: 'wx', mode: 0o600 });
+      await fs.rename(temporary, USER_DATA);
+    } finally { await fs.rm(temporary, { force: true }).catch(() => {}); }
+  };
+  stateSaveQueue = stateSaveQueue.catch(() => {}).then(write);
+  return stateSaveQueue;
 }
 
 async function preserveUnreadableProgress() {
@@ -774,6 +792,10 @@ function createWindow() {
 app.whenReady().then(() => {
   nativeTheme.themeSource = 'dark';
   ipcMain.handle('setup:load-state', async () => loadState());
+  ipcMain.handle('setup:recheck-network', async () => {
+    if (currentOperation) throw new Error('Wait for setup to finish before rechecking network settings.');
+    await refreshNetwork(); await saveState(); return publicState();
+  });
   ipcMain.handle('setup:get-build-info', async () => {
     try {
       const value = JSON.parse(await fs.readFile(path.join(__dirname, 'build-provenance.json'), 'utf8'));

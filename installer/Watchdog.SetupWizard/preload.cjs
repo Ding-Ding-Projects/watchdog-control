@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('watchdogSetup', Object.freeze({
   removeWebhook: () => ipcRenderer.invoke('hosting:remove-webhook'),
   testWebhook: () => ipcRenderer.invoke('hosting:test-webhook'),
   useUrl: (target, action) => ipcRenderer.invoke('hosting:use-url', { target, action }),
+  recheckNetwork: () => ipcRenderer.invoke('setup:recheck-network'),
   loadState: () => ipcRenderer.invoke('setup:load-state'),
   getBuildInfo: () => ipcRenderer.invoke('setup:get-build-info'),
   saveSettings: (value) => ipcRenderer.invoke('setup:save-settings', value),

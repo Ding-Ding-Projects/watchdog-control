@@ -21,13 +21,16 @@ async function writeSecretFile(file, value) {
 async function getLanIpv4Addresses() {
   const privateAddress = '^(10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d{1,3}\\.\\d{1,3}|192\\.168\\.\\d{1,3}\\.\\d{1,3})$';
   const script = `$ErrorActionPreference = 'Stop'\n$addresses = @(Get-NetAdapter -Physical -ErrorAction Stop | Where-Object { $_.Status -eq 'Up' } | ForEach-Object { Get-NetIPAddress -InterfaceIndex $_.ifIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue } | Where-Object { $_.IPAddress -match '${privateAddress}' } | ForEach-Object { $_.IPAddress } | Sort-Object -Unique)\nConvertTo-Json -InputObject $addresses -Compress\n`;
-  const result = await powershell(script, { timeoutMs: 15000 });
-  if (result.exitCode !== 0 || !result.stdout.trim()) return [];
-  try {
-    const parsed = JSON.parse(result.stdout.trim());
-    const addresses = Array.isArray(parsed) ? parsed : [parsed];
-    return [...new Set(addresses.filter((address) => typeof address === 'string' && net.isIP(address) === 4))].sort();
-  } catch { return []; }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const result = await powershell(script, { timeoutMs: 15000 });
+    if (result.exitCode !== 0 || !result.stdout.trim()) continue;
+    try {
+      const parsed = JSON.parse(result.stdout.trim());
+      const addresses = Array.isArray(parsed) ? parsed : [parsed];
+      return [...new Set(addresses.filter((address) => typeof address === 'string' && net.isIP(address) === 4))].sort();
+    } catch {}
+  }
+  throw new Error('Windows network discovery did not return a valid result after two attempts. Recheck the network to retry.');
 }
 
 function randomCode() {

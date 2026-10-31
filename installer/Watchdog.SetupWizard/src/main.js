@@ -160,7 +160,23 @@ function preflightChecks() {
   ];
 }
 
+function networkRecovery() {
+  const section = card('Network discovery', state?.networkMessage || 'Checking the private network interfaces.', state?.lanAddresses?.length ? 'info' : 'warning');
+  const recheck = button('Recheck network', 'small', async () => {
+    recheck.disabled = true;
+    status('Checking network', 'Windows may take up to two bounded attempts to return the active physical interfaces.', 'working');
+    try {
+      const updated = await window.watchdogSetup.recheckNetwork();
+      state = { ...state, ...updated }; selectedLan = state.lanBindAddress || '';
+      render(); status(state.lanAddresses.length ? 'Network ready' : 'Network unavailable', state.networkMessage, state.lanAddresses.length ? 'success' : 'warning');
+    } catch (error) { status('Network recheck did not complete', error.message, 'warning'); }
+    finally { recheck.disabled = false; }
+  });
+  recheck.id = 'recheck-network'; section.append(recheck); return section;
+}
+
 function renderWelcome() {
+  content.append(networkRecovery());
   const checks = preflightChecks();
   const allReady = checks.every((check) => check.ok);
   content.append(heading('01 · Preflight', allReady ? 'Cleared for launch.' : 'Preflight complete.', 'The wizard checks this computer, prepares the service, and verifies its health before calling setup complete.', orbitMark(allReady)));
@@ -204,6 +220,7 @@ function renderWelcome() {
 }
 
 function renderHostSettings() {
+  content.append(networkRecovery());
   content.append(heading('02 · Destination', 'Where should the service listen?', 'These choices apply to this Watchdog Control service only.'));
   content.append(hostingMode(state));
   const addresses = state?.lanAddresses || [];
@@ -602,7 +619,19 @@ function logEntry(message) {
   state.operationLog = [...(state.operationLog || []), { time, message }].slice(-100);
 }
 
-nextButton.addEventListener('click', async () => {
+let navigationBusy = false;
+async function navigationAction(action) {
+  if (navigationBusy) return;
+  navigationBusy = true;
+  const previousStep = step;
+  try { await action(); }
+  catch (error) {
+    step = previousStep;
+    status('Review the setup settings', error.message || 'The requested step could not be saved. Your current step is unchanged.', 'warning');
+  } finally { navigationBusy = false; }
+}
+
+nextButton.addEventListener('click', () => navigationAction(async () => {
   if (step === 0 && state?.progressRecoveryWarning) {
     if (!document.querySelector('#preserve-progress-confirmation')?.checked) {
       status('Preserve progress first', 'The unreadable progress file must be copied and verified before a new setup record can be written.', 'warning');
@@ -617,7 +646,7 @@ nextButton.addEventListener('click', async () => {
     }
     return;
   }
-  await persistSettings();
+  if (step > 0) await persistSettings();
   if (step === 1) {
     const port = Number(document.querySelector('#host-port')?.value);
     if (!Number.isInteger(port) || port < 1024 || port > 65535) {
@@ -642,19 +671,21 @@ nextButton.addEventListener('click', async () => {
     state.docker = result;
     if (!result.ready) status('Setup will install the prerequisite', result.message, 'warning');
   }
-  step = Math.min(step + 1, 5);
-  state = await window.watchdogSetup.saveProgress({ lastStep: step });
+  const nextStep = Math.min(step + 1, 5);
+  state = await window.watchdogSetup.saveProgress({ lastStep: nextStep });
+  step = nextStep;
   render();
-});
+}));
 
-backButton.addEventListener('click', async () => {
+backButton.addEventListener('click', () => navigationAction(async () => {
   await persistSettings();
-  step = Math.max(0, step - 1);
-  state = await window.watchdogSetup.saveProgress({ lastStep: step });
+  const previousStep = Math.max(0, step - 1);
+  state = await window.watchdogSetup.saveProgress({ lastStep: previousStep });
+  step = previousStep;
   render();
-});
+}));
 
-installButton.addEventListener('click', async () => {
+installButton.addEventListener('click', () => navigationAction(async () => {
   await persistSettings();
   if (!state.startConfirmed) {
     status('Review the destination', 'Select the authorization checkbox before starting setup.', 'warning');
@@ -682,7 +713,7 @@ installButton.addEventListener('click', async () => {
     operationRunning = false;
     render();
   }
-});
+}));
 
 cancelButton.addEventListener('click', async () => {
   if (operationRunning) {
