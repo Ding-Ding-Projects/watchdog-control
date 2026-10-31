@@ -5,7 +5,7 @@
     "Codex-remote.dc.html": {
       "expand": "fill",
       "h": 1180,
-      "title": "Dashboard · Slop Machine remote",
+      "title": "Dashboard \u00b7 Slop Machine remote",
       "w": 1440,
       "x": 1520,
       "y": 0
@@ -13,7 +13,7 @@
     "Docs-home.dc.html": {
       "expand": "fill",
       "h": 1100,
-      "title": "Documentation site · Home",
+      "title": "Documentation site \u00b7 Home",
       "w": 1440,
       "x": 2520,
       "y": 2920
@@ -21,14 +21,14 @@
     "Main.dc.html": {
       "expand": "fill",
       "h": 1180,
-      "title": "Dashboard · Overview",
+      "title": "Dashboard \u00b7 Overview",
       "w": 1440,
       "x": 0,
       "y": 0
     },
     "Mobile-overview.dc.html": {
       "h": 844,
-      "title": "Dashboard · Phone",
+      "title": "Dashboard \u00b7 Phone",
       "w": 390,
       "x": 3040,
       "y": 1300
@@ -36,7 +36,7 @@
     "Services.dc.html": {
       "expand": "fill",
       "h": 1180,
-      "title": "Dashboard · Services with regex builder and command palette",
+      "title": "Dashboard \u00b7 Services with regex builder and command palette",
       "w": 1440,
       "x": 3040,
       "y": 0
@@ -44,21 +44,21 @@
     "Settings.dc.html": {
       "expand": "fill",
       "h": 1500,
-      "title": "Dashboard · Settings",
+      "title": "Dashboard \u00b7 Settings",
       "w": 1440,
       "x": 0,
       "y": 1300
     },
     "Setup-progress.dc.html": {
       "h": 780,
-      "title": "Setup assistant · Install progress",
+      "title": "Setup assistant \u00b7 Install progress",
       "w": 1180,
       "x": 1260,
       "y": 2920
     },
     "Setup-welcome.dc.html": {
       "h": 780,
-      "title": "Setup assistant · Welcome and quick host",
+      "title": "Setup assistant \u00b7 Welcome and quick host",
       "w": 1180,
       "x": 0,
       "y": 2920
@@ -66,10 +66,42 @@
     "Sign-in.dc.html": {
       "expand": "fill",
       "h": 900,
-      "title": "Dashboard · Sign in and first-run owner setup",
+      "title": "Dashboard \u00b7 Sign in and first-run owner setup",
       "w": 1440,
       "x": 1520,
       "y": 1300
+    },
+    "Wizard-welcome.dc.html": {
+      "x": 0,
+      "y": 4400,
+      "w": 1180,
+      "h": 780,
+      "title": "Desktop setup wizard \u00b7 Preflight welcome",
+      "is_interactive": true
+    },
+    "Wizard-destination.dc.html": {
+      "x": 1260,
+      "y": 4400,
+      "w": 1180,
+      "h": 780,
+      "title": "Desktop setup wizard \u00b7 Destination",
+      "is_interactive": false
+    },
+    "Wizard-install.dc.html": {
+      "x": 2520,
+      "y": 4400,
+      "w": 1180,
+      "h": 780,
+      "title": "Desktop setup wizard \u00b7 Install mission",
+      "is_interactive": false
+    },
+    "Wizard-complete.dc.html": {
+      "x": 3780,
+      "y": 4400,
+      "w": 1180,
+      "h": 780,
+      "title": "Desktop setup wizard \u00b7 All clear",
+      "is_interactive": false
     }
   },
   "createdOnFiles": {
@@ -104,6 +136,14 @@
       "w": 240,
       "x": 0,
       "y": 2620
+    },
+    "wizard": {
+      "kind": "title1",
+      "maxW": 4960,
+      "text": "Desktop setup wizard",
+      "w": 240,
+      "x": 0,
+      "y": 4140
     }
   },
   "order": [
@@ -115,7 +155,11 @@
     "Mobile-overview.dc.html",
     "Setup-welcome.dc.html",
     "Setup-progress.dc.html",
-    "Docs-home.dc.html"
+    "Docs-home.dc.html",
+    "Wizard-welcome.dc.html",
+    "Wizard-destination.dc.html",
+    "Wizard-install.dc.html",
+    "Wizard-complete.dc.html"
   ],
   "pages": [],
   "title": "Watchdog Control redesign"

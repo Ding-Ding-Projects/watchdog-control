@@ -48,3 +48,15 @@ anything from the internet.
 | `Docs-home.dc.html` | Documentation site home |
 
 Bracketed text such as `[HOST NAME 1]` marks values that come from live data.
+
+### Desktop setup wizard row
+
+| File | Surface |
+| --- | --- |
+| `Wizard-welcome.dc.html` | Preflight welcome: orbit mark, four preflight checks that tick off in turn, quick launch, and the six-stage flight plan rail |
+| `Wizard-destination.dc.html` | Destination: private LAN interfaces as selectable cards, HTTPS port with availability, data folder |
+| `Wizard-install.dc.html` | Install mission: progress ring, stage list with the current stage pulsing, and a live log with a cursor |
+| `Wizard-complete.dc.html` | All clear: check burst, LAN address with copy and open, pairing code hidden until revealed, certificate export, host agent |
+
+These four screens apply to the desktop setup wizard renderer in `installer/Watchdog.SetupWizard/src`.
+
