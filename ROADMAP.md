@@ -22,6 +22,7 @@
 - [x] Add settings for language (English, Cantonese, both), playfulness, emoji, product name, personal vocabulary, theme, accent colour, text size, density, contrast, motion, school mode, focus spotlight, one thing at a time, progress cheer, narration, sounds and refresh.
 - [x] Restyle the setup assistant and the documentation site to the same design.
 - [x] Capture the dashboard in Chrome against a local controller.
+- [x] Redesign the desktop setup wizard renderer (preflight, destination, install mission, all clear) and exercise every step in Chrome with a mock bridge.
 - [ ] Capture the redesigned setup assistant window on Windows.
 - [ ] Complete reviewed Cantonese text beyond navigation, titles, descriptions and main actions.
 - [ ] Scheduled settings, per-element appearance editing and element locks.

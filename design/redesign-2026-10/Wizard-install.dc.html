@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup wizard install mission</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#05070B}
+.lab{font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#8A9AB0}
+.mono{font-family:'Geist Mono',monospace}.disp{font-family:'Chakra Petch',sans-serif}
+.ring{transform:rotate(-90deg);transform-origin:50% 50%}
+.arc{stroke-dasharray:565;stroke-dashoffset:215;animation:fill 1.8s cubic-bezier(.2,.8,.2,1) both}
+@keyframes fill{from{stroke-dashoffset:565}}
+.spin{transform-origin:110px 110px;animation:spin 3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.now{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(61,232,255,0)}0%,100%{box-shadow:0 0 0 0 rgba(61,232,255,.45)}}
+.cursor{display:inline-block;width:8px;height:14px;background:#3DE8FF;vertical-align:-2px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.line{animation:in .4s ease both}.line:nth-child(2){animation-delay:.1s}.line:nth-child(3){animation-delay:.2s}.line:nth-child(4){animation-delay:.3s}.line:nth-child(5){animation-delay:.4s}
+@keyframes in{from{opacity:0;transform:translateX(-6px)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 1180px; height: 780px; box-sizing: border-box; background: radial-gradient(800px 500px at 30% 40%, rgba(61,232,255,.10), transparent 60%), #05070B; color: #E6EDF5; font-family: 'Geist', sans-serif; font-size: 14px; display: flex; flex-direction: column; border: 1px solid #22303F; border-radius: 16px; overflow: hidden">
+  <header style="height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid #1A2533; background: rgba(10,14,21,.7)">
+    <div style="display: flex; align-items: center; gap: 10px"><svg width="26" height="26" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 2l13 7.5v15L17 32 4 24.5v-15z" fill="none" stroke="#3DE8FF" stroke-width="2"></path><path d="M10 20l3.5-7 3.5 5 3.5-5 3.5 7" stroke="#3DE8FF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="disp" style="font-weight: 700; letter-spacing: .06em">WATCHDOG CONTROL</span><span class="lab">setup wizard</span></div>
+    <div class="mono" style="font-size: 12px; color: #3DE8FF">● INSTALLING · elapsed [01:42]</div>
+  </header>
+  <main style="flex: 1; padding: 26px 36px 20px; display: grid; grid-template-columns: 300px 1fr; gap: 28px; min-height: 0">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 18px">
+      <div style="position: relative; width: 220px; height: 220px">
+        <svg width="220" height="220" viewBox="0 0 220 220" role="img" aria-label="Setup [62] percent complete">
+          <circle cx="110" cy="110" r="90" stroke="#1A2533" stroke-width="10" fill="none"></circle>
+          <g class="ring"><circle class="arc" cx="110" cy="110" r="90" stroke="#3DE8FF" stroke-width="10" fill="none" stroke-linecap="round"></circle></g>
+          <g class="spin"><circle cx="110" cy="8" r="4" fill="#A891FF"></circle></g>
+          <circle cx="110" cy="110" r="104" stroke="rgba(124,92,255,.25)" stroke-width="1" fill="none" stroke-dasharray="3 7"></circle>
+        </svg>
+        <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center"><span class="mono" style="font-size: 46px; font-weight: 600">[62]%</span><span class="lab">pulling image</span></div>
+      </div>
+      <ol aria-label="Install stages" style="list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 8px">
+        <li style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: rgba(124,255,178,.07); color: #7CFFB2">Verify release<span>✓</span></li>
+        <li style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: rgba(124,255,178,.07); color: #7CFFB2">Write service files<span>✓</span></li>
+        <li class="now" style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; border: 1px solid #3DE8FF; background: rgba(61,232,255,.08); color: #E6FBFF">Pull pinned image<span class="mono">now</span></li>
+        <li style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.02); color: #8A9AB0">Start service<span class="mono">next</span></li>
+        <li style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.02); color: #8A9AB0">Verify HTTPS and LAN<span class="mono">next</span></li>
+      </ol>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; min-height: 0">
+      <div><div class="lab" style="color: #3DE8FF">06 · Install mission</div><h1 class="disp" style="margin: 8px 0 0; font-size: 38px; font-weight: 700">Bringing the service online</h1><p style="margin: 8px 0 0; color: #A9B6C8">You can close this window. Progress resumes where it stopped and nothing already started is removed.</p></div>
+      <section aria-label="Operation log" style="flex: 1; min-height: 0; padding: 16px 18px; border-radius: 14px; border: 1px solid #22303F; background: #04060A; overflow: hidden">
+        <div class="lab" style="margin-bottom: 10px">Live log · secrets never shown</div>
+        <ol class="mono" style="list-style: none; margin: 0; padding: 0; font-size: 12.5px; line-height: 1.9; color: #C9D4E2">
+          <li class="line"><span style="color: #56657A">[15:02:11]</span> Release manifest verified for <span style="color: #9AF3FF">[v0.2.0]</span></li>
+          <li class="line"><span style="color: #56657A">[15:02:12]</span> Compose file matched its expected checksum</li>
+          <li class="line"><span style="color: #56657A">[15:02:13]</span> Wrote .env, host.bat and protected TLS files</li>
+          <li class="line"><span style="color: #56657A">[15:02:14]</span> Pulling <span style="color: #9AF3FF">[sha256:…8466]</span> [148 / 234 MB]</li>
+          <li class="line"><span style="color: #56657A">[15:03:53]</span> <span class="cursor"></span></li>
+        </ol>
+      </section>
+      <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 13px; color: #8A9AB0">Cancelling waits for an active installer and never removes a started service.</span><div style="display: flex; gap: 8px"><button type="button" style="min-height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid #22303F; background: transparent; color: #E6EDF5; font: inherit">Copy log</button><button type="button" style="min-height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid rgba(255,77,106,.45); background: transparent; color: #FF9DB0; font: inherit">Cancel</button></div></div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":780}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

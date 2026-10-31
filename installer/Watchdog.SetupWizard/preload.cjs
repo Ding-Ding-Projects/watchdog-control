@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('watchdogSetup', Object.freeze({
   cancel: () => ipcRenderer.invoke('setup:cancel'),
   retryAgent: () => ipcRenderer.invoke('setup:retry-agent'),
   exportCertificate: () => ipcRenderer.invoke('setup:export-certificate'),
+  openDashboard: () => ipcRenderer.invoke('setup:open-dashboard'),
   onProgress: (callback) => ipcRenderer.on('setup:progress', (_event, value) => callback(value)),
   onOperationProgress: (callback) => ipcRenderer.on('setup:operation-progress', (_event, value) => callback(value))
 }));

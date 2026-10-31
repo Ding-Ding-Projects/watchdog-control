@@ -2,6 +2,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
+const { processIdentity, sameProcess } = require('./process-identity.cjs');
 
 async function stageRuntime(source, destination, hostingSource) {
   const entries = [];
@@ -47,15 +48,26 @@ function hostService(directory) {
     async start(config, runtime) {
       await fs.mkdir(directory, { recursive: true });
       const owner = crypto.randomUUID();
-      const configPath = path.join(directory, 'config.json');
+      let registered;
+      try { registered = JSON.parse(await fs.readFile(ownerFile, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+      if (registered && (!registered.identity || sameProcess(registered.identity, await processIdentity(registered.identity.pid)))) throw new Error('The registered hosting supervisor is still active or its identity is unavailable.');
+      const configPath = path.join(directory, `config-${owner}.json`);
       const previous = await this.status();
       if (!['stopped', 'failed', 'unavailable'].includes(previous.phase)) throw new Error('The current hosting session must stop before its settings change.');
-      await fs.writeFile(configPath, JSON.stringify({ ...config, owner, runtime, controller: path.join(runtime, 'controller/Watchdog.Web.exe'), cloudflared: path.join(runtime, 'tools/cloudflared.exe') }), { mode: 0o600 });
+      await fs.writeFile(configPath, JSON.stringify({ ...config, owner, launchId: owner, runtime, controller: path.join(runtime, 'controller/Watchdog.Web.exe'), cloudflared: path.join(runtime, 'tools/cloudflared.exe') }), { mode: 0o600 });
       const child = spawn(path.join(runtime, 'tools/node.exe'), [path.join(runtime, 'hosting/supervisor.cjs'), configPath],
         { detached: true, windowsHide: true, shell: false, stdio: 'ignore', cwd: directory });
       await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', () => reject(new Error('The hosting supervisor could not start.'))); });
       child.unref();
-      return { owner };
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const accepted = await this.status();
+        if (accepted.launchId === owner) {
+          if (accepted.phase === 'failed') throw new Error('The hosting supervisor rejected its startup configuration.');
+          return { owner };
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      throw new Error('The new hosting supervisor did not acknowledge this configuration. Existing hosting was preserved.');
     },
     async stop() {
       let owner;

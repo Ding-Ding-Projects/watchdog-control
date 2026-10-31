@@ -5,7 +5,7 @@ const { verifyEndpoint, quickTunnelUrl } = require('./endpoint.cjs');
 const { credentialStore } = require('./credentials.cjs');
 const net = require('node:net');
 const crypto = require('node:crypto');
-const { processIdentity, sameProcess } = require('./process-identity.cjs');
+const { processIdentity, sameProcess, terminateRegisteredProcess } = require('./process-identity.cjs');
 const { startDocker } = require('./docker-start.cjs');
 const { Recovery, NotificationDelivery } = require('./lifecycle.cjs');
 
@@ -13,6 +13,7 @@ async function supervise(configPath) {
   let config = {};
   const directory = path.dirname(configPath);
   const statusPath = path.join(directory, 'status.json');
+  const childrenPath = path.join(directory, 'children.json');
   const lockPath = path.join(directory, 'owner.json');
   const status = { schemaVersion: 1, owner: null, pid: process.pid, mode: config.mode, phase: 'starting', publicUrl: null, notification: 'not-configured' };
   let service = null; let tunnel = null; let candidate = null; let stopped = false;
@@ -51,8 +52,9 @@ async function supervise(configPath) {
     } });
     // Product output may contain operational details and must not enter status records.
     service.stderr.resume();
+    await recordChildren();
   }
-  function startTunnel() {
+  async function startTunnel() {
     candidate = null; tunnelStartedAt = Date.now();
     tunnel = launch(config.cloudflared, ['tunnel', '--no-autoupdate', '--url', config.origin,
       '--origin-ca-pool', config.caFile, '--origin-server-name', config.address]);
@@ -61,8 +63,19 @@ async function supervise(configPath) {
       pending = (pending + chunk.toString('utf8')).slice(-8192);
       for (const match of pending.matchAll(/https:\/\/[a-z0-9-]+\.trycloudflare\.com\b/g)) candidate = quickTunnelUrl(match[0]);
     });
+    await recordChildren();
   }
   const alive = child => child && child.exitCode === null && child.signalCode === null && child.pid && !child.killed;
+  async function recordChildren() {
+    const children = [];
+    for (const [kind, child] of [['controller', service], ['tunnel', tunnel]]) {
+      if (!alive(child)) continue;
+      const identity = await processIdentity(child.pid);
+      if (!identity) { await stopChild(child); throw new Error('A newly started child identity could not be recorded.'); }
+      children.push({ kind, identity });
+    }
+    await fs.writeFile(childrenPath, JSON.stringify({ owner: config.owner, children }), { mode: 0o600 });
+  }
   async function stopChild(child) {
     if (!alive(child)) return;
     await new Promise(resolve => {
@@ -81,11 +94,23 @@ async function supervise(configPath) {
     try { previous = JSON.parse(await fs.readFile(lockPath, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
     if (previous && !previous.identity) throw new Error('The prior ownership record has no verifiable process identity.');
     if (previous?.identity && sameProcess(previous.identity, await processIdentity(previous.identity.pid))) return;
+    if (previous) {
+      let oldChildren;
+      try { oldChildren = JSON.parse(await fs.readFile(childrenPath, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+      if (oldChildren?.owner === previous.owner) {
+        for (const child of oldChildren.children || []) {
+          const relative = child.kind === 'controller' ? 'controller/Watchdog.Web.exe' : child.kind === 'tunnel' ? 'tools/cloudflared.exe' : null;
+          if (!relative || !previous.runtime || child.identity?.executable?.toLowerCase() !== path.join(previous.runtime, relative).toLowerCase()) throw new Error('An old child registration is outside its owned runtime.');
+          if (sameProcess(child.identity, await processIdentity(child.identity.pid))) await terminateRegisteredProcess(child.identity);
+        }
+      }
+    }
     const identity = await processIdentity(process.pid);
     if (!identity) throw new Error('The supervisor process identity is unavailable.');
     config.owner = crypto.randomUUID();
-    status.owner = config.owner; status.mode = config.mode;
-    await fs.writeFile(lockPath, JSON.stringify({ owner: config.owner, identity }), { mode: 0o600 });
+    status.owner = config.owner; status.mode = config.mode; status.launchId = config.launchId;
+    await fs.writeFile(path.join(directory, 'config.json'), JSON.stringify(config), { mode: 0o600 });
+    await fs.writeFile(lockPath, JSON.stringify({ owner: config.owner, identity, runtime: config.runtime }), { mode: 0o600 });
     ownsLock = true;
     await fs.rm(path.join(directory, 'stop.json'), { force: true });
     await publish();
@@ -103,7 +128,7 @@ async function supervise(configPath) {
     if (stopped) return;
     if (!ready) throw new Error('Controller did not pass HTTPS, management assets, and authentication checks.');
     await publish({ phase: 'ready', localReady: true });
-    if (config.tunnelEnabled) startTunnel();
+    if (config.tunnelEnabled) await startTunnel();
     while (!stopped) {
       if (await stopRequested()) { stopped = true; break; }
       let localReady = false;
@@ -143,7 +168,7 @@ async function supervise(configPath) {
               config.tunnelEnabled = false;
             } else {
               await publish({ phase: 'recovering-tunnel', tunnel: 'backoff', retry: recovery.attempts });
-              await pause(delay); startTunnel();
+              await pause(delay); await startTunnel();
             }
           }
         }
@@ -157,7 +182,7 @@ async function supervise(configPath) {
     await stopChild(tunnel); await stopChild(service);
     if (ownsLock) try {
       const owner = JSON.parse(await fs.readFile(lockPath, 'utf8'));
-      if (owner.owner === config.owner) await fs.rm(lockPath);
+      if (owner.owner === config.owner) { await fs.rm(lockPath); await fs.rm(childrenPath, { force: true }); }
     } catch {}
     if (mutex?.listening) await new Promise(resolve => mutex.close(resolve));
     if (stopped) await publish({ phase: 'stopped', publicUrl: null, localReady: false }).catch(() => {});

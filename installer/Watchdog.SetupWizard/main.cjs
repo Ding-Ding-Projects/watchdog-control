@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, shell, clipboard } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell, clipboard } = require('electron');
 const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const { promises: fs } = require('node:fs');
@@ -692,6 +692,7 @@ async function executeInstall() {
     state.verified = true;
     if (state.tunnelEnabled || state.startupEnabled) await hosting.startSupervisor(state, tls);
     state.hosting = await hosting.snapshot();
+    checkCancelled();
     if (state.manageThisComputer && state.agentConsent) await installAgent();
     else if (state.manageThisComputer) state.agentStatus = 'Pending. Separate machine-wide service consent was not recorded.';
     state.pairingCodeShown = true;
@@ -737,7 +738,7 @@ function createWindow() {
     height: 780,
     minWidth: 640,
     minHeight: 500,
-    backgroundColor: '#edf1f7',
+    backgroundColor: '#05070B',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -771,6 +772,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  nativeTheme.themeSource = 'dark';
   ipcMain.handle('setup:load-state', async () => loadState());
   ipcMain.handle('setup:get-build-info', async () => {
     try {
@@ -819,6 +821,7 @@ app.whenReady().then(() => {
     return false;
   });
   ipcMain.handle('setup:retry-agent', async () => {
+    if (currentOperation) throw new Error('Wait for the current setup operation before retrying the host agent.');
     if (!state.verified || !state.lanUrl || !state.certificateFingerprint) throw new Error('The dashboard must be verified before retrying host-agent setup.');
     await installAgent();
     await saveState();
@@ -855,6 +858,13 @@ app.whenReady().then(() => {
     if (action === 'copy') clipboard.writeText(url);
     else await shell.openExternal(url);
     return true;
+  });
+  ipcMain.handle('setup:open-dashboard', async () => {
+    let address;
+    try { address = new URL(state.lanUrl || ''); } catch { return { opened: false }; }
+    if (!state.verified || address.protocol !== 'https:') return { opened: false };
+    await shell.openExternal(address.href);
+    return { opened: true };
   });
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });

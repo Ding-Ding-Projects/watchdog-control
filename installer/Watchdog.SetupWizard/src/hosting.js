@@ -1,5 +1,8 @@
 function element(tag, text) {
-  const value = document.createElement(tag);
+  const mapped = { 'md-outlined-button': 'button', 'md-checkbox': 'input', 'md-outlined-text-field': 'input' };
+  const value = document.createElement(mapped[tag] || tag);
+  if (tag === 'md-outlined-button') { value.type = 'button'; value.className = 'button small'; }
+  if (tag === 'md-checkbox') value.type = 'checkbox';
   if (text) value.textContent = text;
   return value;
 }
@@ -33,6 +36,8 @@ export function tunnelSettings(state, notify, notificationOnly = false) {
   const configured = element('p', state.hosting?.webhookConfigured ? 'A protected webhook is configured.' : 'No webhook is configured.');
   configured.setAttribute('role', 'status');
   const input = element('md-outlined-text-field');
+  input.setAttribute('aria-label', 'Discord webhook URL');
+  input.placeholder = 'Discord webhook URL';
   input.label = 'Discord webhook URL'; input.type = 'password'; input.autocomplete = 'off';
   input.setAttribute('autocomplete', 'off'); input.setAttribute('spellcheck', 'false');
   input.setAttribute('supporting-text', 'Saved with Windows protection for this user. The value is never shown again.');
