@@ -34,6 +34,7 @@ builder.Services.AddWindowsService(options => options.ServiceName = AgentConfigu
 builder.Services.AddSingleton(configuration);
 builder.Services.AddSingleton<AgentConfigurationStore>();
 builder.Services.AddSingleton<HostInventoryCollector>();
+builder.Services.AddSingleton<Watchdog.Agent.CodexRemote.CodexRemoteManager>();
 builder.Services.AddSingleton<AgentOperationExecutor>();
 builder.Services.AddHostedService<Worker>();
 await builder.Build().RunAsync();

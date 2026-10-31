@@ -8,7 +8,7 @@ using Watchdog.Contracts;
 
 namespace Watchdog.Agent;
 
-public sealed class AgentOperationExecutor(ILogger<AgentOperationExecutor> logger)
+public sealed class AgentOperationExecutor(ILogger<AgentOperationExecutor> logger, CodexRemote.CodexRemoteManager codex)
 {
     private static readonly HashSet<string> ProtectedProcesses = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -16,12 +16,14 @@ public sealed class AgentOperationExecutor(ILogger<AgentOperationExecutor> logge
         "svchost", "fontdrvhost", "dwm", "systemsettings", "watchdogagent", "watchdogcontrolsetup"
     };
 
-    public Task<OperationResultRequest> ExecuteAsync(OperationRecord operation, CancellationToken cancellationToken)
+    public async Task<OperationResultRequest> ExecuteAsync(OperationRecord operation, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            var result = operation.Kind switch
+            var result = operation.Kind.StartsWith("codex.", StringComparison.Ordinal)
+                ? await codex.ExecuteAsync(operation.Kind, cancellationToken)
+                : operation.Kind switch
             {
                 "system.refresh" => "Host inventory refreshed.",
                 "network.flushDns" => FlushDns(),
@@ -34,21 +36,21 @@ public sealed class AgentOperationExecutor(ILogger<AgentOperationExecutor> logge
                 _ => throw new InvalidOperationException("The requested operation is not supported by this agent.")
             };
             AgentRuntimeStatusStore.Write("online", "The latest requested host action completed.");
-            return Task.FromResult(new OperationResultRequest(operation.Id, "succeeded", Limit(result, 2_000)));
+            return new OperationResultRequest(operation.Id, "succeeded", Limit(result, 2_000));
         }
         catch (OperationCanceledException)
         {
-            return Task.FromResult(new OperationResultRequest(operation.Id, "cancelled", "The operation was cancelled before completion."));
+            return new OperationResultRequest(operation.Id, "cancelled", "The operation was cancelled before completion.");
         }
         catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception or TimeoutException or UnauthorizedAccessException or FormatException or System.Security.SecurityException)
         {
             logger.LogWarning("Host action {ActionKind} was rejected or failed with {FailureType}.", operation.Kind, exception.GetType().Name);
-            return Task.FromResult(new OperationResultRequest(operation.Id, "failed", Limit(exception.Message, 500)));
+            return new OperationResultRequest(operation.Id, "failed", Limit(exception.Message, 500));
         }
         catch (Exception exception)
         {
             logger.LogError("Host action {ActionKind} stopped unexpectedly with {FailureType}.", operation.Kind, exception.GetType().Name);
-            return Task.FromResult(new OperationResultRequest(operation.Id, "failed", $"The operation stopped with an unexpected {exception.GetType().Name}. Refresh inventory before retrying."));
+            return new OperationResultRequest(operation.Id, "failed", $"The operation stopped with an unexpected {exception.GetType().Name}. Refresh inventory before retrying.");
         }
     }
 

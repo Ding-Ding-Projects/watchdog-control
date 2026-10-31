@@ -64,6 +64,7 @@ public sealed class ControlState
     public List<OperationRecord> Operations { get; set; } = [];
     public List<PowerChallengeRecord> PowerChallenges { get; set; } = [];
     public List<AuditRecord> Audit { get; set; } = [];
+    public List<CodexStatusRecord> CodexStatuses { get; set; } = [];
 }
 
 public sealed record AgentPollResponse(

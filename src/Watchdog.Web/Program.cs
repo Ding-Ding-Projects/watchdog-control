@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
@@ -59,6 +60,7 @@ builder.Services.AddSingleton<ControlStateStore>();
 builder.Services.AddSingleton<PasswordHasher>();
 builder.Services.AddSingleton<SessionService>();
 builder.Services.AddSingleton<BootstrapService>();
+builder.Services.AddSingleton<CodexSecretCache>();
 builder.Services.AddSingleton<AgentOperationsService>();
 builder.Services.AddRateLimiter(options =>
 {
@@ -124,7 +126,11 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.MapGet("/health", (IWebHostEnvironment environment) =>
-    Results.Ok(new { status = "ready" }));
+    Results.Ok(new
+    {
+        status = "ready",
+        version = typeof(SessionService).Assembly.GetName().Version?.ToString(3)
+    }));
 app.MapGet("/api/setup/status", (BootstrapService bootstrap) =>
     Results.Ok(new { pairingRequired = bootstrap.IsSetupRequired }));
 
@@ -437,6 +443,64 @@ app.MapGet("/api/operations/{operationId}", (
 
     var operation = store.Read(state => state.Operations.FirstOrDefault(candidate => candidate.Id == operationId));
     return operation is null ? Results.NotFound() : Results.Ok(operation);
+});
+
+app.MapGet("/api/hosts/{hostId}/codex", (
+    string hostId,
+    HttpContext context,
+    SessionService sessions,
+    ControlStateStore store,
+    CodexSecretCache codexSecrets) =>
+{
+    if (sessions.GetOwner(context) is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var view = store.Read(state =>
+    {
+        var host = state.Agents.FirstOrDefault(agent => agent.Id == hostId && !agent.Revoked);
+        if (host is null)
+        {
+            return null;
+        }
+
+        var status = state.CodexStatuses.FirstOrDefault(record => record.HostId == hostId);
+        var operations = state.Operations
+            .Where(operation => operation.HostId == hostId && operation.Kind.StartsWith("codex.", StringComparison.Ordinal))
+            .OrderByDescending(operation => operation.CreatedAt)
+            .Take(20)
+            .ToList();
+        return new { host.Id, status, operations };
+    });
+    if (view is null)
+    {
+        return Results.NotFound();
+    }
+
+    context.Response.Headers.CacheControl = "no-store";
+    context.Response.Headers.Pragma = "no-cache";
+    JsonNode? statusDocument = null;
+    if (view.status is not null)
+    {
+        try { statusDocument = JsonNode.Parse(view.status.StatusJson); }
+        catch (System.Text.Json.JsonException) { statusDocument = null; }
+    }
+
+    return Results.Ok(new
+    {
+        hostId = view.Id,
+        status = statusDocument,
+        statusUpdatedAt = view.status?.UpdatedAt,
+        secrets = codexSecrets.Current(hostId).Select(secret => new
+        {
+            kind = secret.Kind,
+            values = secret.Values,
+            expiresAt = secret.ExpiresAt,
+            createdAt = secret.CreatedAt
+        }),
+        operations = view.operations
+    });
 });
 
 app.MapFallbackToFile("index.html");

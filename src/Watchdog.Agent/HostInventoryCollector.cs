@@ -27,7 +27,7 @@ public sealed class HostInventoryCollector
             "Windows",
             Environment.MachineName,
             Environment.OSVersion.VersionString,
-            typeof(HostInventoryCollector).Assembly.GetName().Version?.ToString() ?? "0.1.2",
+            typeof(HostInventoryCollector).Assembly.GetName().Version?.ToString() ?? "0.2.0",
             DateTimeOffset.UtcNow,
             Environment.TickCount64 / 1000,
             ReadCpuPercent(),

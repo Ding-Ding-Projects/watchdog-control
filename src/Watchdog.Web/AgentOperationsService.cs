@@ -6,7 +6,8 @@ namespace Watchdog.Web;
 
 public sealed class AgentOperationsService(
     ControlStateStore store,
-    BootstrapService bootstrapService)
+    BootstrapService bootstrapService,
+    CodexSecretCache codexSecrets)
 {
     private static readonly TimeSpan AgentFreshness = TimeSpan.FromSeconds(75);
     private static readonly TimeSpan InvitationLifetime = TimeSpan.FromMinutes(10);
@@ -131,6 +132,12 @@ public sealed class AgentOperationsService(
 
     public string? RequiredConfirmation(string hostId, OperationRequest request)
     {
+        if (request.Kind == "codex.logout")
+        {
+            var host = store.Read(state => state.Agents.FirstOrDefault(agent => agent.Id == hostId && !agent.Revoked));
+            return host is null ? null : $"SIGN OUT REMOTE AGENT ON {host.Hostname}";
+        }
+
         if (request.TargetId is null)
         {
             return null;
@@ -233,10 +240,22 @@ public sealed class AgentOperationsService(
                 return false;
             }
 
+            var reported = result.Result;
+            if (state.Operations[index].Kind.StartsWith("codex.", StringComparison.Ordinal) && result.Status == "succeeded")
+            {
+                reported = codexSecrets.CaptureAndRedact(agentId, state.Operations[index].Kind, result.Result);
+                if (state.Operations[index].Kind == "codex.status" && reported is not null)
+                {
+                    state.CodexStatuses.RemoveAll(record => record.HostId == agentId);
+                    state.CodexStatuses.Add(new CodexStatusRecord(agentId, reported, DateTimeOffset.UtcNow));
+                    codexSecrets.ApplyStatus(agentId, reported);
+                }
+            }
+
             var operation = state.Operations[index] with
             {
                 Status = result.Status,
-                Result = result.Result,
+                Result = reported,
                 CompletedAt = DateTimeOffset.UtcNow
             };
             state.Operations[index] = operation;
@@ -246,7 +265,7 @@ public sealed class AgentOperationsService(
                 "operation.completed",
                 $"{agentId}:{operation.Kind}",
                 result.Status,
-                result.Result);
+                operation.Kind.StartsWith("codex.", StringComparison.Ordinal) ? null : result.Result);
             return true;
         });
     }
@@ -331,7 +350,14 @@ public sealed class AgentOperationsService(
             "service.start" or
             "service.stop" or
             "service.restart" or
-            "process.terminate"))
+            "process.terminate" or
+            "codex.status" or
+            "codex.login.start" or
+            "codex.login.cancel" or
+            "codex.logout" or
+            "codex.remote.start" or
+            "codex.remote.stop" or
+            "codex.remote.pair"))
         {
             return (null, "unsupported-operation");
         }
@@ -362,6 +388,7 @@ public sealed class AgentOperationsService(
                 "service.stop" => $"STOP SERVICE {host.Snapshot.Services.First(service => service.Id == request.TargetId).DisplayName}",
                 "service.restart" => $"RESTART SERVICE {host.Snapshot.Services.First(service => service.Id == request.TargetId).DisplayName}",
                 "process.terminate" => $"TERMINATE PROCESS {host.Snapshot.Processes.First(process => process.Identity == request.TargetId).Name} ({host.Snapshot.Processes.First(process => process.Identity == request.TargetId).Id})",
+                "codex.logout" => $"SIGN OUT REMOTE AGENT ON {host.Hostname}",
                 _ => null
             };
             if (expectedPhrase is not null &&
@@ -369,6 +396,18 @@ public sealed class AgentOperationsService(
             {
                 SessionService.AddAudit(state, actor, "operation.requested", $"{hostId}:{request.Kind}", "rejected", "confirmation-required");
                 return (null, "confirmation-required");
+            }
+
+            if (request.Kind.StartsWith("codex.", StringComparison.Ordinal) && request.TargetId is not null)
+            {
+                return (null, "unexpected-target");
+            }
+
+            if (request.Kind.StartsWith("codex.", StringComparison.Ordinal) && state.Operations.Count(candidate =>
+                    candidate.HostId == hostId && candidate.Kind.StartsWith("codex.", StringComparison.Ordinal) &&
+                    candidate.Status is "queued" or "running") >= 3)
+            {
+                return (null, "remote-agent-busy");
             }
 
             var operation = NewOperation(hostId, request.Kind, request.TargetId, actor);
@@ -386,6 +425,8 @@ public sealed class AgentOperationsService(
             if (index >= 0)
             {
                 state.Agents[index] = state.Agents[index] with { Revoked = true };
+                state.CodexStatuses.RemoveAll(record => record.HostId == agentId);
+                codexSecrets.Forget(agentId);
                 SessionService.AddAudit(state, actor, "agent.revoked", agentId, "success", null);
             }
         });
