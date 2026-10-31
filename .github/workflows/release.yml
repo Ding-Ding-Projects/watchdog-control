@@ -37,6 +37,7 @@ jobs:
             artifacts/agent/WatchdogAgent.exe
             release/WatchdogControlSetup.exe
             release/WatchdogControlSetup.exe.sha256
+            release/setup-build.json
           if-no-files-found: warn
           retention-days: 14
 

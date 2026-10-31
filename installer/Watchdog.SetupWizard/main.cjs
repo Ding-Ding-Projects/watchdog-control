@@ -683,6 +683,7 @@ async function executeInstall() {
       WATCHDOG_HOST_BIND_IP: state.lanBindAddress,
       WATCHDOG_DATA_PATH: state.storageDirectory,
       WATCHDOG_TLS_CERTIFICATE_HOST_FILE: tls.pfx,
+      WATCHDOG_TLS_CA_HOST_FILE: tls.certFile,
       WATCHDOG_TLS_PASSWORD_HOST_FILE: tls.passwordFile,
       WATCHDOG_PAIRING_CODE_HOST_FILE: pairingFile,
       WATCHDOG_AGENT_ENROLLMENT_CODE_HOST_FILE: enrollmentFile

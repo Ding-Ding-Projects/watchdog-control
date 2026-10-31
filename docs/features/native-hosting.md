@@ -22,6 +22,8 @@ Native mode runs the controller as the signed-in user. Installing the separate m
 
 Run the exact root `build.bat` and `build-installer.bat`. The latter requires committed source and emits one portable `WatchdogControlSetup.exe` containing its launch-time resources. Generated renderer/provenance files are recreated during the build rather than tracked as stale output.
 
-Sixteen focused hosting checks passed at `f285a8a`, with an independent read-only source review. The updated packaging entrypoints, live native service, real temporary tunnel, sign-in registration and Discord delivery remain unverified at this preservation checkpoint. A source check is not deployment proof.
+Nineteen focused hosting/recovery checks passed through `a75fba9`, with independent source review of the hosting and bundled-container units. The root package entrypoint completed at `e436abe`, producing a 168,753,219-byte portable executable. Its real hidden-desktop launch exposed a cold network-discovery/navigation defect, repaired in the subsequent source. The repaired package, live native service, real temporary tunnel, sign-in registration and Discord delivery remain pending at this checkpoint. A source check is not deployment proof.
+
+The [single-container route](container-hosting.md) bundles the controller and monitor. Its actual image build, pull and run remain unverified on a host without Docker.
 
 The requested live chat-style PowerShell/CMD interface is handed off in [issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3). Its design and proposed API are not implemented by this hosting change.

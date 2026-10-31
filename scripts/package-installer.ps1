@@ -28,8 +28,12 @@ try {
     Copy-Item -LiteralPath $source -Destination $destination -Force
     $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
     Set-Content -LiteralPath "$destination.sha256" -Value "$hash  WatchdogControlSetup.exe" -Encoding ascii
-    $receipt = @{ schemaVersion=1; sourceCommit=$sourceSha; version=$provenance.version; builtAtUtc=$provenance.builtAtUtc; sha256=$hash; file='WatchdogControlSetup.exe'; bundledController=$true; bundledTunnel=$true }
-    $receipt | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $destinationDirectory 'setup-build.json') -Encoding UTF8
+    $resourceRoot = Join-Path $projectRoot 'artifacts/electron-setup/win-unpacked/resources'
+    $resources = @(Get-ChildItem -LiteralPath $resourceRoot -File -Recurse | Sort-Object FullName | ForEach-Object {
+        @{ path=$_.FullName.Substring($resourceRoot.Length+1).Replace('\','/'); bytes=$_.Length; sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
+    })
+    $receipt = @{ schemaVersion=1; sourceCommit=$sourceSha; version=$provenance.version; builtAtUtc=$provenance.builtAtUtc; sha256=$hash; file='WatchdogControlSetup.exe'; resources=$resources }
+    $receipt | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $destinationDirectory 'setup-build.json') -Encoding UTF8
     Write-Host "Packaged portable setup assistant: $destination, source $sourceSha, SHA-256 $hash."
     exit 0
 }
