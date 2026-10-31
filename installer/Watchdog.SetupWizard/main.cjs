@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } = require('electron');
 const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const { promises: fs } = require('node:fs');
@@ -782,7 +782,7 @@ function createWindow() {
     height: 780,
     minWidth: 640,
     minHeight: 500,
-    backgroundColor: '#edf1f7',
+    backgroundColor: '#05070B',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -816,6 +816,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  nativeTheme.themeSource = 'dark';
   ipcMain.handle('setup:load-state', async () => loadState());
   ipcMain.handle('setup:get-build-info', async () => {
     try {
@@ -866,6 +867,13 @@ app.whenReady().then(() => {
     return publicState();
   });
   ipcMain.handle('setup:export-certificate', async () => exportPublicCertificate());
+  ipcMain.handle('setup:open-dashboard', async () => {
+    let address;
+    try { address = new URL(state.lanUrl || ''); } catch { return { opened: false }; }
+    if (!state.verified || address.protocol !== 'https:') return { opened: false };
+    await shell.openExternal(address.href);
+    return { opened: true };
+  });
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });

@@ -69,3 +69,31 @@ Setup progress is written through a unique, create-new temporary file per save, 
 The setup application is packaged as the portable `WatchdogControlSetup.exe` file by `build-installer.bat`; its project targets a self-contained, compressed, single-file `win-x64` build. The embedded Compose resource is included in that same executable, so launching the setup application needs no adjacent runtime folder or separate Compose download. Packaging requires the setup source to be committed first and embeds that exact source revision and build time in assembly metadata. The root `build-installer.bat` entrypoint verifies that only the executable is present in its publish folder, checks the packaged file size, and writes a SHA-256 sidecar. The `v0.1.1` package passed the real quick-host path on a computer with a ready local engine; this did not verify Docker installation, restart-resume, certificate import, host-agent installation, or client-device reachability. The `v0.1.2` package, fixed progress-save path, rebuilt interface, and current screenshots remain pending.
 
 Continue with [deployment and recovery](deployment-recovery.md), [security and identity](identity-audit.md), or the [complete wiki setup chapter](../wiki/setup-assistant.md).
+
+## Desktop setup wizard renderer
+
+The alternate desktop setup wizard in `installer/Watchdog.SetupWizard` (`main.cjs`, `preload.cjs`
+and the Vite renderer in `src/`) now follows the command centre design from
+`design/redesign-2026-10` (the `Wizard-*.dc.html` artboards):
+
+- **Preflight.** Release, Docker, network and port checks reveal in turn from the saved state, with
+  an animated orbit mark and a six-stage flight plan rail and top strip.
+- **Destination.** Private LAN interfaces are selectable cards (arrow keys move between them), the
+  HTTPS port validates as you type, and the data folder keeps its browse action.
+- **Install mission.** A progress ring and stage list follow the progress titles the main process
+  reports, with elapsed time on the current stage and a live log with copy.
+- **All clear.** The LAN address with copy and an open-dashboard action (opened only for the verified
+  `https` address), the pairing code hidden until revealed, certificate export and host agent state.
+
+Fonts are bundled, the component library dependency was removed, the window uses the dark theme,
+and every animation stops under reduced motion. The renderer was exercised in Chrome with a mock
+bridge for each step; the packaged wizard has not been run on Windows yet.
+
+| Preflight | Destination | Install mission |
+| --- | --- | --- |
+| ![Preflight checks](../assets/screens/setup-wizard-welcome.png) | ![Destination](../assets/screens/setup-wizard-destination.png) | ![Install mission](../assets/screens/setup-wizard-install.png) |
+
+| Review | All clear | Needs attention |
+| --- | --- | --- |
+| ![Review](../assets/screens/setup-wizard-review.png) | ![All clear](../assets/screens/setup-wizard-complete.png) | ![Needs attention](../assets/screens/setup-wizard-attention.png) |
+

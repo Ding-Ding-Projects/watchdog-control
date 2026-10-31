@@ -65,7 +65,11 @@ with a test agent supplying readings. They are not captures of a Windows host.
 | --- | --- |
 | ![Command centre in the light theme with bilingual labels](docs/assets/screens/daylight-bilingual.png) | ![Command centre at phone width](docs/assets/screens/phone.png) |
 
-The redesigned setup assistant builds cleanly, but its window has not been captured on Windows yet.
+| Desktop setup wizard preflight | Desktop setup wizard install mission |
+| --- | --- |
+| ![Setup wizard preflight checks](docs/assets/screens/setup-wizard-welcome.png) | ![Setup wizard install progress ring and live log](docs/assets/screens/setup-wizard-install.png) |
+
+The desktop setup wizard captures come from its renderer in Chrome with a mock bridge. The setup assistant windows have not been captured on Windows yet.
 
 ## Local publication checks
 
