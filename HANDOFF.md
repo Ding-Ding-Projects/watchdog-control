@@ -1,48 +1,25 @@
 # Handoff
 
-## Hosting checkpoint, 2026-10-31
+## Current hosting acceptance, 2026-10-31
 
-The native/Compose hosting implementation and lifecycle repairs are preserved through `f285a8a90569aefeb1d972e412e232895fa554fb`, verified on its remote task branch. Sixteen focused checks passed and independent source review found the recorded defects resolved. The packaging checkpoint switches the root scripts to the existing portable desktop assistant and bundles the native controller, Node.js and pinned cloudflared. Its build, real setup, tunnel recovery, startup registration and webhook delivery still need verification. See [the hosting workflow](docs/features/native-hosting.md) and [current continuation checkpoint](CLOSEOUT_PROMPT.md).
+Candidate **0.3.2**, source `8e5eb3d36e326d799b7ef05388ad85a34539f5df`, passed the exact root `build-installer.bat` entrypoint. The portable executable has SHA-256 `DFB8D43CE6D31E230CF36D725577DCF248477CAB80FEDBD76E79BF928C760CE5`. The actual packaged Windows assistant completed native setup with saved `verified: true`; strict local and temporary public HTTPS checks passed, including management assets and anonymous management API rejection. Tunnel recovery produced a newly verified address. After the wizard closed, the saved current-user startup launcher independently restarted the monitor, controller and tunnel, and the endpoints again reported 0.3.2.
 
-The owner explicitly handed terminal interface design to the design tool through [issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3). No terminal design was authored here. The endpoint table is a proposal and must not be described as an implemented API.
+Complete single-file launch and visual acceptance remain pending: the initial window image was blank and is not usable evidence. Packaged native setup/state and endpoint results are separate from that visual acceptance.
 
-## Current state
+This proves the saved launcher can run independently; it does **not** prove launch after a new operating-system sign-in or reboot. Discord is deliberately unconfigured by the operator, so actual notification delivery is unverified. No current local Docker execution was performed. Release publication is pending, and client-device LAN access, owner pairing and management operations remain separate acceptance items. Temporary addresses and local machine details are omitted from public records.
 
-Version 0.2.0 adds Slop Machine remote control and a command centre redesign of every interface.
+## Source and verification boundaries
 
-- **Remote control.** The agent now runs the `codex` command-line tool through seven fixed operations (`codex.status`, `codex.login.start`, `codex.login.cancel`, `codex.logout`, `codex.remote.start`, `codex.remote.stop`, `codex.remote.pair`). By default it launches the tool as the console user through `CreateProcessAsUser`; `codex.json` in the protected agent data folder can select the service account, a fixed executable path or a data folder. The controller keeps one-time sign-in and pairing codes in memory only and redacts them everywhere else. New route: `GET /api/hosts/{hostId}/codex`.
-- **Redesign.** The dashboard, setup assistant and documentation site share the command centre design recorded in `design/redesign-2026-10`. Fonts are vendored. `/health` now reports the version.
-- **Evidence.** All three projects build with the pinned SDK (`dotnet build`, Windows targeting enabled on Linux). A local development controller passed an end-to-end remote check (status, sign-in, start, pair, typed sign-out, rejected targets and unknown actions, and no code on disk, in the audit log or in the dashboard feed). The dashboard was driven in Chrome and captured; captures are in `docs/assets/screens`.
-- **Not verified.** Nothing in this release has run on a Windows host yet: the remote operations, the console-user launch path, the redesigned setup assistant window, and the v0.1.2 progress-save fix carried into this version all remain unverified there.
+- Native certificate loading uses `UserKeySet` on Windows and `EphemeralKeySet` elsewhere, with disposal after Kestrel stops. Strict CA and hostname checks remain enabled.
+- The wizard uses a bounded fixed bundled-Node endpoint probe for native and Compose health checks. Twenty-one focused probe/lifecycle checks passed at `672a114`.
+- Hosting guide/category/search/wiki routes were exercised locally at 1440 ? 1000 and 390 ? 844. The fence-rendering repair at `d131c72` preserved literal command lines and escaped HTML; long blocks scroll by keyboard without widening the page. This is local static-documentation evidence, not deployed-site evidence.
+- Documentation verification used an isolated hidden-desktop Chromium runtime. Both application roots, listeners and empty desktop windows were independently absent after normal exit. The lifecycle helper could not prove detached-child absence, and automatic approval review blocked profile removal. The private profile and evidence remain retained; cleanup is not certified complete. Do not retry that deletion through another route.
+- Dashboard screenshots retain their development-controller/test-agent provenance. Current packaged-wizard screenshots require a public-safety review before becoming README evidence.
 
-## Earlier state (v0.1.x)
+## Remaining work
 
-The public repository `Ding-Ding-Projects/watchdog-control` is on local and hosted `main` at `453c0a64aded8d96961af4b5618df4bb053f2414` before the current uncommitted changes. Normal release `v0.1.1` targets `1e39ae2647ab8959867f8050a340f0a3a1421cf4` and is neither draft nor prerelease.
+Verify the normal release and all expected assets against the accepted source. Verify the deployed documentation routes after their deployment revision is known. Keep new-sign-in startup, second-device LAN access, owner pairing, optional management-agent installation, host operations, Docker runtime, and actual Discord delivery explicitly unverified until separately exercised. The operator has chosen to leave Discord unconfigured.
 
-The release asset `WatchdogControlSetup.exe` is 68,084,205 bytes with SHA-256 `f8154f0d6978c1b95175fab12ecfaa3bed378c94338205459f9bf4a36e2d3114`. It includes the bundled `compose.yaml` integrity check. On the current host, it launched without installation and its welcome-screen action pulled the verified image, wrote the service configuration, started only the Watchdog Control Compose project, and returned HTTPS health HTTP 200. The container remained healthy after the setup window exited on a concurrent write to `progress.json.tmp`.
+The PowerShell/CMD terminal design handoff remains tracked in [issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3). This hosting acceptance does not establish terminal implementation or complete required-feature coverage.
 
-The current source gives every progress save a unique temporary file before atomically replacing the destination. The version is set to `0.1.2`. A focused 32-writer concurrency check has been added but not run. The current source, new single-file package, post-fix GUI launch, and usable built-interface capture remain unverified. An earlier white capture was rejected and is not current evidence.
-
-## Current evidence
-
-- Normal release `v0.1.1` exists for source `1e39ae2647ab8959867f8050a340f0a3a1421cf4` with the expected setup file, Compose, host controls, image archive, manifest, and checksums.
-- The released setup file completed the one-click host operation through its real welcome-screen button without installing software on a computer with an already-ready local engine.
-- The service passed its local HTTPS health check with HTTP 200 and Docker reported the container healthy.
-- The setup window crashed after hosting while concurrent progress writers contended for a shared temporary path. The source fix is present locally and still needs a rebuilt package and runtime confirmation.
-- A read-only audit of current public records covered the open issue, its 17 comments, the progress Discussion and its 20 comments/replies, both releases, and the deployed documentation home with five same-origin assets. It found 16 wording findings across nine authored comments. Those comment bodies still need correction and exact readback before the public-record review can close.
-- Cross-device LAN access, owner pairing, client certificate trust, agent enrollment, typed host operations, and native prerequisite installation remain unverified.
-- Public documentation contains the v0.1.1 runtime result and labels the new fix and package as pending. The current screenshot and hosted documentation readback remain pending.
-- Automated tests have not run; they remain reserved for after implementation and functional acceptance.
-
-## Next actions
-
-0. On a Windows host with the codex tool installed, run the Slop Machine page end to end: status, sign-in, remote control start, pairing, stop and sign-out, and capture the redesigned setup assistant window.
-1. Finish the source and documentation review and run the publication-language scan.
-2. Preserve the reviewed source and documentation on `main`, then run the exact root `build-installer.bat` entrypoint.
-3. Launch the resulting single-file setup tool on a fresh named hidden desktop, inspect the actual window, and capture only genuine, readable pixels without authentication values.
-4. Verify that saved progress loads and the setup window stays open after the already-running service is recognized. Do not start another container when the existing service is healthy.
-5. Complete the requested local acceptance, then run the 32-writer concurrency check last. Update the final records from actual outputs.
-6. Correct the nine authored public comments found by the read-only audit, reread their stored bodies, and record any platform edit-history limit.
-7. push the final `main` state, verify `git ls-remote`, then read back the normal v0.1.2 release, assets, immutable image, and deployed documentation routes.
-
-The current service remains running. No computer shutdown or restart was initiated. Preserve unrelated containers, volumes, files, authentication, and user configuration. Use only GitHub CLI for forge work and do not rewrite history.
+Earlier package results, historical pending states and mock-bridge wizard screenshots are preserved in the [hosting evidence archive](docs/history/hosting-before-0.3.2.md). No prior capture is relabelled as current proof.

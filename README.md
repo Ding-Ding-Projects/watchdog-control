@@ -1,6 +1,6 @@
 # Watchdog Control
 
-Current development adds [native hosting, verified temporary access, protected Discord notifications and sign-in startup](docs/features/native-hosting.md). The portable setup build now bundles the native controller and hosting tools, so this route does not require Docker. Packaged and live runtime verification is pending. [Issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) hands the requested live chat-style PowerShell/CMD terminal to the designer.
+Current development adds [native hosting, verified temporary access, protected Discord notifications and sign-in startup](docs/features/native-hosting.md). The portable setup build now bundles the native controller and hosting tools, so this route does not require Docker. The 0.3.2 packaged native setup, strict local/public endpoint checks, tunnel recovery and independent startup-launcher invocation are verified. Release publication remains pending. [Issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) hands the requested live chat-style PowerShell/CMD terminal to the designer.
 
 [Documentation site](https://ding-ding-projects.github.io/watchdog-control/)
 
@@ -16,11 +16,13 @@ Host operations use typed actions and a documented operation catalog. The public
 
 ## Project state
 
-The source includes the authenticated host API, Windows management agent, dashboard, tracked Compose deployment, `host.bat`, and a tailored portable single-file setup tool. Normal release `v0.1.1` is published for source `1e39ae2647ab8959867f8050a340f0a3a1421cf4`; its setup executable is 68,084,205 bytes with SHA-256 `f8154f0d6978c1b95175fab12ecfaa3bed378c94338205459f9bf4a36e2d3114`. The release includes the embedded-Compose integrity contract and the corrected environment-sample name.
+Candidate **0.3.2**, source `8e5eb3d36e326d799b7ef05388ad85a34539f5df`, passed the exact root `build-installer.bat` entrypoint. The portable executable has SHA-256 `DFB8D43CE6D31E230CF36D725577DCF248477CAB80FEDBD76E79BF928C760CE5`. The actual packaged Windows assistant completed native setup with saved `verified: true`; strict local and temporary public HTTPS checks passed, including management assets and anonymous management API rejection. Tunnel recovery produced a newly verified address. After the wizard closed, the saved current-user startup launcher independently restarted the monitor, controller and tunnel, and the endpoints again reported 0.3.2.
 
-The portable setup file embeds `compose.yaml` and exposes a one-click welcome-screen action. On the current host, the `v0.1.1` file was launched directly without installation; the GUI action wrote its protected service files, pulled the verified image, started the named Compose project, and returned HTTPS health HTTP 200. The container remained healthy when a concurrent setup-progress save caused the window to exit. Source now uses a unique temporary file for each progress write; release `v0.1.2` will carry that fix.
+Complete single-file launch and visual acceptance remain pending: the initial window image was blank and is not usable evidence. Packaged native setup/state and endpoint results are separate from that visual acceptance.
 
-The updated `v0.1.2` single-file package and a current built-interface screenshot remain pending. Cross-device LAN reachability, owner authentication, host operations, and live documentation routes remain separate verification steps. The local host health result does not establish those behaviors.
+This proves the saved launcher can run independently; it does **not** prove launch after a new operating-system sign-in or reboot. Discord is deliberately unconfigured by the operator, so actual notification delivery is unverified. No current local Docker execution was performed. Release publication is pending, and client-device LAN access, owner pairing and management operations remain separate acceptance items. Temporary addresses and local machine details are omitted from public records.
+
+[Earlier release and setup evidence](docs/history/hosting-before-0.3.2.md) remains archived with its original provenance.
 
 ## Slop Machine remote control
 
@@ -42,7 +44,9 @@ text size, contrast, motion, focus modes, narration and sounds. See
 
 ## One-click setup and hosting
 
-`WatchdogControlSetup.exe` is a self-contained portable setup tool. It embeds `compose.yaml`, verifies its SHA-256 against the selected release manifest, and offers **Host Watchdog Control on this computer** on the welcome screen. The executable launches without installation. On a computer with an already-ready local Docker Engine and Compose plugin, that action pulls the release-pinned image, writes only this service's configuration and protected local files, starts the Watchdog Control project, and checks HTTPS health and the selected LAN URL. It installs no additional software on this ready-engine path.
+`WatchdogControlSetup.exe` is a portable single-file assistant with **Native Windows** selected by default and **Docker Compose** available explicitly. Native mode uses its bundled controller, Node.js and cloudflared, with no Docker installation. Select an active private interface, port and persistent data folder, then start and verify. Optional temporary public access verifies HTTPS, management assets and authentication boundaries before exposing a clickable address. **Start when you sign in** controls the current-user launcher for the selected service and monitor. Discord notifications remain off without a protected operator-configured destination.
+
+The Compose route retains the release-pinned image, bundled Compose integrity checks and local-engine prerequisite flow. Current local acceptance covers native hosting; it does not establish container execution.
 
 For an existing service folder, exact matches of `compose.yaml`, `.env`, `host.bat`, and `scripts/host.ps1` are reused. Differing files require confirmation after byte-for-byte backups are verified; declining or a concurrent file change preserves the existing file.
 
@@ -67,11 +71,7 @@ with a test agent supplying readings. They are not captures of a Windows host.
 | --- | --- |
 | ![Command centre in the light theme with bilingual labels](docs/assets/screens/daylight-bilingual.png) | ![Command centre at phone width](docs/assets/screens/phone.png) |
 
-| Desktop setup wizard preflight | Desktop setup wizard install mission |
-| --- | --- |
-| ![Setup wizard preflight checks](docs/assets/screens/setup-wizard-welcome.png) | ![Setup wizard install progress ring and live log](docs/assets/screens/setup-wizard-install.png) |
-
-The desktop setup wizard captures come from its renderer in Chrome with a mock bridge. The setup assistant windows have not been captured on Windows yet.
+Current public-safe screenshots of the verified 0.3.2 packaged setup flow are pending review. Earlier mock-bridge wizard images are retained only in the [historical evidence archive](docs/history/hosting-before-0.3.2.md); they are not current native-runtime evidence.
 
 ## Local publication checks
 

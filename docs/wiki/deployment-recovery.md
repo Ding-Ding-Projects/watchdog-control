@@ -1,13 +1,11 @@
 # Deployment and recovery
 
-**Current state: Partial.** Normal release `v0.1.1` is published with `compose.yaml`, a matching Compose checksum in the release manifest, the immutable image archive, the portable setup file, host controls, and checksums. Its local one-click GUI flow started the service and returned HTTPS health HTTP 200. The setup window then exited during a concurrent progress-save collision, while the service stayed healthy. Source now gives each progress write a unique temporary file. The rebuilt `v0.1.2` package, current GUI screenshots, and access from a second LAN device remain pending.
+Candidate **0.3.2**, source `8e5eb3d36e326d799b7ef05388ad85a34539f5df`, passed the exact root `build-installer.bat` entrypoint. The portable executable has SHA-256 `DFB8D43CE6D31E230CF36D725577DCF248477CAB80FEDBD76E79BF928C760CE5`. The actual packaged Windows assistant completed native setup with saved `verified: true`; strict local and temporary public HTTPS checks passed, including management assets and anonymous management API rejection. Tunnel recovery produced a newly verified address. After the wizard closed, the saved current-user startup launcher independently restarted the monitor, controller and tunnel, and the endpoints again reported 0.3.2.
 
-The portable setup file embeds `compose.yaml` and verifies its SHA-256 against the selected release manifest. The welcome screen has a one-click hosting action for a ready local engine, available release, selected private LAN address, valid host port, and saved data folder. The setup application runs without installation. Quick hosting downloads the verified product image and writes this service's configuration and protected local files; it does not install the setup application, Docker Desktop, another runtime, or the optional Windows host agent. The full wizard still guides prerequisite setup and recovery. Double-clicking `host.bat` selects detached start by default after eight seconds; `--detached`, `--logs`, and `--stop` are also available.
+This proves the saved launcher can run independently; it does **not** prove launch after a new operating-system sign-in or reboot. Discord is deliberately unconfigured by the operator, so actual notification delivery is unverified. No current local Docker execution was performed. Release publication is pending, and client-device LAN access, owner pairing and management operations remain separate acceptance items. Temporary addresses and local machine details are omitted from public records.
 
-Preserve existing data and configuration during updates. A port mapping is not proof of client LAN reachability; verify the full HTTPS URL from an intended LAN client after health succeeds on the host.
+Complete single-file launch and visual acceptance remain pending: the initial window image was blank and is not usable evidence. Packaged native setup/state and endpoint results are separate from that visual acceptance.
 
-## Next chapters
+Preserve existing data and configuration during updates. The saved launcher was invoked independently after the wizard closed; a new operating-system sign-in was not performed. The monitor restarts only owned processes and verifies replacement temporary addresses. No current local container-runtime execution or second-device LAN reachability is established by these results.
 
-- [System architecture](architecture.md)
-- [Security and identity](security.md)
-- [Restart and shutdown](power-actions.md)
+Read the [native hosting workflow](../features/native-hosting.md), [setup assistant](setup-assistant.md), and [earlier evidence archive](https://github.com/Ding-Ding-Projects/watchdog-control/blob/main/docs/history/hosting-before-0.3.2.md).
