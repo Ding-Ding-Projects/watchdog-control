@@ -63,6 +63,7 @@
 
 - [ ] Correct and reread the nine authored issue and Discussion comments found by the public-record audit; preserve the current review inventory and note any platform edit-history limit.
 - [x] Exercise local hosting guide/category/search/wiki navigation at desktop and narrow widths and repair literal fenced-command rendering; deployed proof remains separate.
+- [x] Verify deployed hosting-guide category, search, article and related-wiki navigation at source `52ebfb7`, with exact source/asset hashes, keyboard focus, command scrolling and no observed page overflow at 1440 x 1000 and 390 x 844, English/dark, scale 1.
 - [ ] Verify the deployed GitHub Pages home, articles, category routes, assets, and exact GitHub `homepage` value.
 - [ ] Publish the prepared GitHub wiki pages when the wiki endpoint is available and read back every stored page and link.
 - [ ] Refresh the README with inspected genuine captures from the final built dashboard and setup assistant.
