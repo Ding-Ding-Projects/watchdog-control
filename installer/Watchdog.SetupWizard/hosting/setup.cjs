@@ -42,7 +42,8 @@ function createHosting(options) {
       if (!addresses.includes(state.lanBindAddress)) throw new Error('The selected LAN interface is no longer available. Review host settings.');
       const previous = await service.status();
       if (!['stopped', 'unavailable', 'failed'].includes(previous.phase)) throw new Error('Hosting is already registered. Stop the current hosting session before starting another.');
-      if (!await helpers.portAvailable(state.hostPort)) throw new Error('The selected HTTPS port is already occupied. Existing processes were not changed.');
+      // The supervisor first reclaims exactly identified children of a dead owner,
+      // then checks the port exclusively. An early port probe would block that recovery.
       await helpers.secureDirectory(secretDirectory);
       await fs.mkdir(state.storageDirectory, { recursive: true });
       let pairingCode;

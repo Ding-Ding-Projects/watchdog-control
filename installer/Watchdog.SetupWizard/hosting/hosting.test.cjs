@@ -8,7 +8,8 @@ const { webhookUrl, credentialStore } = require('./credentials.cjs');
 const { Recovery } = require('./lifecycle.cjs');
 const { stageRuntime, hostService } = require('./host-service.cjs');
 const { NotificationDelivery } = require('./lifecycle.cjs');
-const { sameProcess, processIdentity } = require('./process-identity.cjs');
+const { sameProcess, processIdentity, terminateRegisteredProcess } = require('./process-identity.cjs');
+const { spawn } = require('node:child_process');
 const { supervise } = require('./supervisor.cjs');
 const { createHosting } = require('./setup.cjs');
 const { startupCommand } = require('./startup.cjs');
@@ -183,4 +184,47 @@ test('notification provider stays out of message content and failed sends stay i
   await assert.rejects(sendNotification(provider, 'https://unapproved.example', false), /verified temporary/);
   assert.equal(reads, 1);
   await assert.rejects(sendNotification(provider, null, true, async () => ({ status: 429 })), /HTTP 429/);
+});
+
+test('a stale heartbeat never permits replacing the configuration of a live registered owner', { skip: process.platform !== 'win32' }, async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'watchdog-live-owner-test-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const identity = await processIdentity(process.pid);
+  await fs.writeFile(path.join(directory, 'owner.json'), JSON.stringify({ owner: 'active', identity }));
+  await fs.writeFile(path.join(directory, 'status.json'), JSON.stringify({ updatedAt: '2000-01-01T00:00:00Z', phase: 'ready' }));
+  await fs.writeFile(path.join(directory, 'config.json'), 'original configuration');
+  await assert.rejects(hostService(directory).start({ port: 12345 }, directory), /still active/);
+  assert.equal(await fs.readFile(path.join(directory, 'config.json'), 'utf8'), 'original configuration');
+  assert.equal((await fs.readdir(directory)).filter(name => /^config-/.test(name)).length, 0);
+});
+
+test('registered child reclaim refuses a changed start time and terminates only its matching retained handle', { skip: process.platform !== 'win32' }, async t => {
+  const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { windowsHide: true, stdio: 'ignore' });
+  t.after(() => { if (child.exitCode === null && child.signalCode === null) child.kill(); });
+  await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject); });
+  const identity = await processIdentity(child.pid);
+  await assert.rejects(terminateRegisteredProcess({ ...identity, handleStartedAt: '1' }), /safely reclaimed/);
+  assert.equal(sameProcess(identity, await processIdentity(child.pid)), true);
+  await terminateRegisteredProcess(identity);
+  assert.equal(await processIdentity(child.pid), null);
+});
+
+test('normal native retry delegates occupied-port ownership to the supervisor before verifying', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'watchdog-native-recovery-test-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const cert = path.join(directory, 'public.pem');
+  await fs.writeFile(cert, require('node:tls').rootCertificates[0]);
+  let launched = false;
+  const service = createHosting({ userData: directory, secretDirectory: directory, resourceRoot: directory,
+    startSupervisor: async () => { launched = true; },
+    verifyEndpoint: async () => { assert.equal(launched, true); return { version: '1.0.0' }; },
+    helpers: { checkCancelled: () => {}, addresses: async () => ['192.168.1.2'],
+      portAvailable: async () => false, secureDirectory: async () => {},
+      writeSecret: async (file, value) => fs.writeFile(file, value),
+      tls: async () => ({ certFile: cert, fingerprint: 'fixture' }), progress: () => {} }
+  });
+  const state = { hostingMode: 'native', startConfirmed: true, hostPort: 8443, lanBindAddress: '192.168.1.2', storageDirectory: directory, verified: false };
+  await service.native(state);
+  assert.equal(launched, true);
+  assert.equal(state.verified, true);
 });
