@@ -1,22 +1,38 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark light">
-  <meta name="theme-color" content="#11151b">
+  <meta name="theme-color" content="#05070B">
   <title>Watchdog Control</title>
+  <link rel="preload" href="/fonts/geist-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/chakra-petch-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <div class="backdrop" aria-hidden="true"><div class="grid-plane"></div><div class="scanline"></div></div>
   <div id="app" aria-live="off"></div>
   <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <div class="toast-region" id="toasts" aria-live="polite" aria-relevant="additions"></div>
+  <div id="context-menu" class="context-menu" role="menu" hidden></div>
   <dialog id="dialog" aria-labelledby="dialog-title">
     <form method="dialog">
       <button class="icon-button dialog-close" value="cancel" aria-label="Close dialog">×</button>
     </form>
     <div id="dialog-content"></div>
+  </dialog>
+  <dialog id="palette" class="palette" aria-label="Command palette">
+    <div class="palette-input">
+      <span class="palette-prompt" aria-hidden="true">›</span>
+      <label class="sr-only" for="palette-query">Search commands and pages</label>
+      <input id="palette-query" autocomplete="off" spellcheck="false" placeholder="Type a command or a page">
+      <kbd>Esc</kbd>
+    </div>
+    <ul id="palette-list" class="palette-list" role="listbox" aria-label="Commands"></ul>
   </dialog>
 </body>
 </html>

@@ -3,65 +3,135 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         Title="Watchdog Control Setup" Width="1180" Height="780" MinWidth="640" MinHeight="480"
-        WindowStyle="None" ResizeMode="CanResizeWithGrip" Background="{StaticResource WindowBackground}"
+        WindowStyle="None" AllowsTransparency="False" ResizeMode="CanResizeWithGrip" Background="{StaticResource WindowBackground}"
         Loaded="Window_Loaded" Closing="Window_Closing" PreviewKeyDown="Window_PreviewKeyDown" SizeChanged="Window_SizeChanged">
-    <Border BorderBrush="#D9DEE8" BorderThickness="1" CornerRadius="18" Background="{StaticResource WindowBackground}">
+    <Border BorderBrush="{StaticResource CardBorder}" BorderThickness="1">
         <Grid>
-            <Grid.RowDefinitions><RowDefinition Height="54"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-            <Border Grid.Row="0" Background="#EEF2F9" CornerRadius="18,18,0,0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-                <DockPanel Margin="18,0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Border Width="28" Height="28" CornerRadius="9" Background="#2458D3" Margin="0,0,10,0">
-                            <TextBlock Text="W" Foreground="White" FontWeight="Bold" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <TextBlock Text="WATCHDOG CONTROL" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                        <TextBlock Text="  •  SETUP ASSISTANT" Foreground="{StaticResource TextSecondary}" FontSize="12" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
-                        <Button Style="{StaticResource MaterialDesignIconButton}" ToolTip="Minimize" AutomationProperties.Name="Minimize window" Click="Minimize_Click" Content="—"/>
-                        <Button Style="{StaticResource MaterialDesignIconButton}" ToolTip="Maximize or restore" AutomationProperties.Name="Maximize or restore window" Click="Maximize_Click" Content="□"/>
-                        <Button Style="{StaticResource MaterialDesignIconButton}" ToolTip="Close" AutomationProperties.Name="Close setup assistant" Click="Close_Click" Content="×"/>
-                    </StackPanel>
-                </DockPanel>
-            </Border>
-            <Grid x:Name="WorkspaceGrid" Grid.Row="1" Margin="26,24,26,20">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="250"/><ColumnDefinition Width="28"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                <Border x:Name="NavigationPanel" Grid.Column="0" CornerRadius="18" Background="{StaticResource SurfaceBackground}" Padding="20">
-                    <DockPanel>
-                        <StackPanel DockPanel.Dock="Top" Margin="2,4,2,22">
-                            <TextBlock Text="Setup progress" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
-                            <TextBlock x:Name="StepCounter" Text="STEP 1 OF 6" FontSize="12" FontWeight="Bold" Margin="0,5,0,0"/>
+            <!-- Backdrop: glows and a faint measurement grid -->
+            <Rectangle IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <RadialGradientBrush Center="0.78,-0.1" GradientOrigin="0.78,-0.1" RadiusX="0.75" RadiusY="0.9">
+                        <GradientStop Color="#203DE8FF" Offset="0" />
+                        <GradientStop Color="#003DE8FF" Offset="1" />
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Rectangle IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <RadialGradientBrush Center="-0.05,1.1" GradientOrigin="-0.05,1.1" RadiusX="0.6" RadiusY="0.7">
+                        <GradientStop Color="#1A7C5CFF" Offset="0" />
+                        <GradientStop Color="#007C5CFF" Offset="1" />
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Rectangle IsHitTestVisible="False" Opacity="0.55">
+                <Rectangle.Fill>
+                    <DrawingBrush TileMode="Tile" Viewport="0,0,40,40" ViewportUnits="Absolute">
+                        <DrawingBrush.Drawing>
+                            <GeometryDrawing Geometry="M0,0 L40,0 M0,0 L0,40">
+                                <GeometryDrawing.Pen>
+                                    <Pen Brush="#0F7898C8" Thickness="1" />
+                                </GeometryDrawing.Pen>
+                            </GeometryDrawing>
+                        </DrawingBrush.Drawing>
+                    </DrawingBrush>
+                </Rectangle.Fill>
+                <Rectangle.OpacityMask>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FF000000" Offset="0" />
+                        <GradientStop Color="#00000000" Offset="0.9" />
+                    </LinearGradientBrush>
+                </Rectangle.OpacityMask>
+            </Rectangle>
+            <Rectangle x:Name="ScanLine" IsHitTestVisible="False" Height="140" VerticalAlignment="Top" Opacity="0.5">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#003DE8FF" Offset="0" />
+                        <GradientStop Color="#123DE8FF" Offset="0.5" />
+                        <GradientStop Color="#003DE8FF" Offset="1" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+                <Rectangle.RenderTransform>
+                    <TranslateTransform x:Name="ScanLineOffset" Y="-140" />
+                </Rectangle.RenderTransform>
+            </Rectangle>
+
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="54"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <Border Grid.Row="0" Background="#B30A0E15" BorderBrush="{StaticResource Hairline}" BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                    <DockPanel Margin="18,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Viewbox Width="30" Height="30" Margin="0,0,12,0">
+                                <Canvas Width="34" Height="34">
+                                    <Path Data="M17,2 L30,9.5 L30,24.5 L17,32 L4,24.5 L4,9.5 Z" StrokeThickness="2">
+                                        <Path.Stroke>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Color="#3DE8FF" Offset="0" />
+                                                <GradientStop Color="#7C5CFF" Offset="1" />
+                                            </LinearGradientBrush>
+                                        </Path.Stroke>
+                                    </Path>
+                                    <Path Data="M10,20 L13.5,13 L17,18 L20.5,13 L24,20" Stroke="#3DE8FF" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                                </Canvas>
+                            </Viewbox>
+                            <TextBlock Text="WATCHDOG CONTROL" FontFamily="{StaticResource DisplayFont}" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Text="   SETUP ASSISTANT" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextSecondary}" FontSize="11" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <StackPanel x:Name="StepList"/>
-                        <StackPanel DockPanel.Dock="Bottom" Margin="2,20,2,2">
-                            <Border Height="1" Background="#E5E9F0" Margin="0,0,0,14"/>
-                            <TextBlock Text="Your configuration is saved on this computer. Credentials are never written to the setup record or operation log." FontSize="12" Foreground="{StaticResource TextSecondary}"/>
-                            <TextBlock x:Name="VersionText" Text="Version and build time: unavailable" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,12,0,0"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
+                            <Button Style="{StaticResource MaterialDesignIconButton}" Foreground="{StaticResource TextSecondary}" ToolTip="Minimize" AutomationProperties.Name="Minimize window" Click="Minimize_Click" Content="—"/>
+                            <Button Style="{StaticResource MaterialDesignIconButton}" Foreground="{StaticResource TextSecondary}" ToolTip="Maximize or restore" AutomationProperties.Name="Maximize or restore window" Click="Maximize_Click" Content="□"/>
+                            <Button Style="{StaticResource MaterialDesignIconButton}" Foreground="{StaticResource TextSecondary}" ToolTip="Close" AutomationProperties.Name="Close setup assistant" Click="Close_Click" Content="×"/>
                         </StackPanel>
                     </DockPanel>
                 </Border>
-                <Border x:Name="ContentPanel" Grid.Column="2" CornerRadius="18" Background="{StaticResource SurfaceBackground}" Padding="34,30,34,22">
-                    <Grid>
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                        <TextBlock x:Name="CompactStepText" Grid.Row="0" Text="STEP 1 OF 6" FontSize="12" FontWeight="Bold" Margin="2,0,0,8" Visibility="Collapsed"/>
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
-                            <StackPanel x:Name="PageHost"/>
-                        </ScrollViewer>
-                        <Border Grid.Row="2" Background="#F3F6FB" CornerRadius="12" Padding="14,11" Margin="0,15,0,14" AutomationProperties.LiveSetting="Polite">
-                            <DockPanel>
-                                <Ellipse x:Name="StatusDot" Width="9" Height="9" Fill="#677184" Margin="0,4,10,0" DockPanel.Dock="Left"/>
-                                <TextBlock x:Name="StatusText" Text="Ready. No changes have been made." FontSize="13" Foreground="{StaticResource TextSecondary}" AutomationProperties.LiveSetting="Polite"/>
-                            </DockPanel>
-                        </Border>
-                        <DockPanel Grid.Row="3">
-                            <Button x:Name="BackButton" Content="Back" Click="Back_Click" HorizontalAlignment="Left" IsEnabled="False"/>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
-                                <Button x:Name="CancelButton" Content="Cancel" Click="Cancel_Click" Style="{StaticResource MaterialDesignOutlinedButton}"/>
-                                <Button x:Name="NextButton" Content="Next" Click="Next_Click" IsDefault="True"/>
+                <Grid x:Name="WorkspaceGrid" Grid.Row="1" Margin="22,20,22,18">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="260"/><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <Border x:Name="NavigationPanel" Grid.Column="0" CornerRadius="18" Background="#CC0A0E15" BorderBrush="{StaticResource Hairline}" BorderThickness="1" Padding="18">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Margin="4,2,4,20">
+                                <TextBlock Text="SETUP PROGRESS" FontFamily="{StaticResource MonoFont}" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock x:Name="StepCounter" Text="STEP 1 OF 6" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource AccentBrush}" Margin="0,6,0,0"/>
                             </StackPanel>
+                            <StackPanel DockPanel.Dock="Bottom" Margin="4,18,4,2">
+                                <Border Height="1" Background="{StaticResource Hairline}" Margin="0,0,0,14"/>
+                                <TextBlock Text="Progress is saved on this computer. Credentials are never written to the setup record or operation log." FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock x:Name="VersionText" Text="Version and build time: unavailable" FontFamily="{StaticResource MonoFont}" FontSize="10.5" Foreground="{StaticResource IdleBrush}" Margin="0,12,0,0"/>
+                            </StackPanel>
+                            <StackPanel x:Name="StepList"/>
                         </DockPanel>
-                    </Grid>
-                </Border>
+                    </Border>
+                    <Border x:Name="ContentPanel" Grid.Column="2" CornerRadius="18" Background="#D90C121B" BorderBrush="{StaticResource Hairline}" BorderThickness="1" Padding="34,28,34,20">
+                        <Grid>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <TextBlock x:Name="CompactStepText" Grid.Row="0" Text="STEP 1 OF 6" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource AccentBrush}" Margin="2,0,0,8" Visibility="Collapsed"/>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+                                <StackPanel x:Name="PageHost" RenderTransformOrigin="0.5,0">
+                                    <StackPanel.RenderTransform>
+                                        <TranslateTransform x:Name="PageOffset" Y="0" />
+                                    </StackPanel.RenderTransform>
+                                </StackPanel>
+                            </ScrollViewer>
+                            <Border Grid.Row="2" Background="{StaticResource CardBackground}" BorderBrush="{StaticResource Hairline}" BorderThickness="1" CornerRadius="12" Padding="14,11" Margin="0,15,0,14" AutomationProperties.LiveSetting="Polite">
+                                <DockPanel>
+                                    <Grid Width="12" Height="12" Margin="0,3,10,0" DockPanel.Dock="Left" VerticalAlignment="Top">
+                                        <Ellipse x:Name="StatusPulse" Width="12" Height="12" Fill="{StaticResource IdleBrush}" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                            <Ellipse.RenderTransform><ScaleTransform x:Name="StatusPulseScale" ScaleX="1" ScaleY="1" /></Ellipse.RenderTransform>
+                                        </Ellipse>
+                                        <Ellipse x:Name="StatusDot" Width="9" Height="9" Fill="{StaticResource IdleBrush}"/>
+                                    </Grid>
+                                    <TextBlock x:Name="StatusText" Text="Ready. No changes have been made." FontSize="13" Foreground="{StaticResource TextSecondary}" AutomationProperties.LiveSetting="Polite"/>
+                                </DockPanel>
+                            </Border>
+                            <DockPanel Grid.Row="3">
+                                <Button x:Name="BackButton" Content="Back" Click="Back_Click" HorizontalAlignment="Left" IsEnabled="False" Style="{StaticResource QuietButton}"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
+                                    <Button x:Name="CancelButton" Content="Cancel" Click="Cancel_Click" Style="{StaticResource QuietButton}"/>
+                                    <Button x:Name="NextButton" Content="Next" Click="Next_Click" IsDefault="True"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Grid>
         </Grid>
     </Border>

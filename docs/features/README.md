@@ -17,6 +17,8 @@ The product source contains the dashboard, authenticated API, host agent, fixed 
 - [Authentication, pairing, and audit](identity-audit.md)
 - [Deployment and recovery](deployment-recovery.md)
 - [Automatic setup assistant](setup-assistant.md)
+- [Slop Machine remote control](remote-agent.md)
+- [Dashboard experience](dashboard-experience.md)
 
 ## Feature status
 
@@ -27,6 +29,8 @@ The product source contains the dashboard, authenticated API, host agent, fixed 
 | Event logs | Implemented in source | Bounded collection and dashboard records exist; runtime query remains unverified. |
 | Storage and networking | Implemented in source | Host records and views exist; LAN installation and live values remain unverified. |
 | Updates and firewall | Read-only source workflow | Status is collected and shown; remote mutation is intentionally unavailable. |
+| Slop Machine remote control | Implemented in source | Seven typed remote operations, one-time code redaction, and the dashboard page passed a local end-to-end check; a Windows host run remains unverified. |
+| Dashboard experience | Implemented in source | Command centre redesign, settings, command palette, regex builder and notification centre were exercised in Chrome against a local controller. |
 | Typed operation catalog | Implemented in source | Eight typed operations, current target validation, exact destructive-action confirmations, one-time power challenges, and audit writes are present; live enforcement remains unverified. |
 | Restart and shutdown | Implemented in source | The API issues a short-lived challenge and exact confirmation; no host power operation was run during this work. |
 | Authentication, pairing, and audit | Implemented in source | Pairing, sessions, revocation, and audit records exist; installed security behavior remains unverified. |

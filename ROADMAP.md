@@ -6,6 +6,26 @@
 - [ ] Verify typed service, process, event-log, storage, network, update, and firewall behavior on an authorized target.
 - [ ] Verify shutdown and restart confirmation, audit records, and host-side operation results without initiating a local host power action.
 
+## 1a. Slop Machine remote control
+
+- [x] Add seven typed remote agent operations: status, device-code sign-in start and cancel, sign-out with a typed phrase, remote control start and stop, and phone pairing.
+- [x] Run the tool as the console user by default, with owner-only `codex.json` settings for the service account, a fixed executable path and a data folder.
+- [x] Keep one-time sign-in and pairing codes in controller memory only, redacted from operation records, the audit log, exports and the data file.
+- [x] Add the dashboard Slop Machine page with link topology, setup steps, countdown rings and activity.
+- [x] Pass a local end-to-end check against a development controller with a test agent.
+- [ ] Verify status, sign-in, remote control start, pairing and sign-out on a real Windows host, including the signed-in user launch path.
+
+## 1b. Command centre redesign (v0.2.0)
+
+- [x] Design every interface on the redesign canvas and keep the files in `design/redesign-2026-10`.
+- [x] Rebuild the dashboard: host radar, telemetry, gauges, view transitions, command palette, context menus, regex builder, notification centre, vendored fonts and full reduced-motion support.
+- [x] Add settings for language (English, Cantonese, both), playfulness, emoji, product name, personal vocabulary, theme, accent colour, text size, density, contrast, motion, school mode, focus spotlight, one thing at a time, progress cheer, narration, sounds and refresh.
+- [x] Restyle the setup assistant and the documentation site to the same design.
+- [x] Capture the dashboard in Chrome against a local controller.
+- [ ] Capture the redesigned setup assistant window on Windows.
+- [ ] Complete reviewed Cantonese text beyond navigation, titles, descriptions and main actions.
+- [ ] Scheduled settings, per-element appearance editing and element locks.
+
 ## 2. One-click hosting and setup assistant
 
 - [ ] Build the current concurrent progress-save fix through `build.bat`; the earlier 2026-10-23 result predates this change.

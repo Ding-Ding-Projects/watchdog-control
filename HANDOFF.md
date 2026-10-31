@@ -2,6 +2,15 @@
 
 ## Current state
 
+Version 0.2.0 adds Slop Machine remote control and a command centre redesign of every interface.
+
+- **Remote control.** The agent now runs the `codex` command-line tool through seven fixed operations (`codex.status`, `codex.login.start`, `codex.login.cancel`, `codex.logout`, `codex.remote.start`, `codex.remote.stop`, `codex.remote.pair`). By default it launches the tool as the console user through `CreateProcessAsUser`; `codex.json` in the protected agent data folder can select the service account, a fixed executable path or a data folder. The controller keeps one-time sign-in and pairing codes in memory only and redacts them everywhere else. New route: `GET /api/hosts/{hostId}/codex`.
+- **Redesign.** The dashboard, setup assistant and documentation site share the command centre design recorded in `design/redesign-2026-10`. Fonts are vendored. `/health` now reports the version.
+- **Evidence.** All three projects build with the pinned SDK (`dotnet build`, Windows targeting enabled on Linux). A local development controller passed an end-to-end remote check (status, sign-in, start, pair, typed sign-out, rejected targets and unknown actions, and no code on disk, in the audit log or in the dashboard feed). The dashboard was driven in Chrome and captured; captures are in `docs/assets/screens`.
+- **Not verified.** Nothing in this release has run on a Windows host yet: the remote operations, the console-user launch path, the redesigned setup assistant window, and the v0.1.2 progress-save fix carried into this version all remain unverified there.
+
+## Earlier state (v0.1.x)
+
 The public repository `Ding-Ding-Projects/watchdog-control` is on local and hosted `main` at `453c0a64aded8d96961af4b5618df4bb053f2414` before the current uncommitted changes. Normal release `v0.1.1` targets `1e39ae2647ab8959867f8050a340f0a3a1421cf4` and is neither draft nor prerelease.
 
 The release asset `WatchdogControlSetup.exe` is 68,084,205 bytes with SHA-256 `f8154f0d6978c1b95175fab12ecfaa3bed378c94338205459f9bf4a36e2d3114`. It includes the bundled `compose.yaml` integrity check. On the current host, it launched without installation and its welcome-screen action pulled the verified image, wrote the service configuration, started only the Watchdog Control Compose project, and returned HTTPS health HTTP 200. The container remained healthy after the setup window exited on a concurrent write to `progress.json.tmp`.
@@ -21,6 +30,7 @@ The current source gives every progress save a unique temporary file before atom
 
 ## Next actions
 
+0. On a Windows host with the codex tool installed, run the Slop Machine page end to end: status, sign-in, remote control start, pairing, stop and sign-out, and capture the redesigned setup assistant window.
 1. Finish the source and documentation review and run the publication-language scan.
 2. Preserve the reviewed source and documentation on `main`, then run the exact root `build-installer.bat` entrypoint.
 3. Launch the resulting single-file setup tool on a fresh named hidden desktop, inspect the actual window, and capture only genuine, readable pixels without authentication values.

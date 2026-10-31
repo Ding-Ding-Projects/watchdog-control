@@ -19,6 +19,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Automation.Peers;
 using Microsoft.Win32;
@@ -84,6 +85,7 @@ public partial class MainWindow : Window
         else if (!string.IsNullOrWhiteSpace(_state.StorageDirectory))
             _step = Math.Clamp(_state.LastStep, 0, StepCount - 1);
         RenderStep();
+        StartScanLine();
         if (_step is 0 or 2)
             await ProbeDockerAsync();
         await ProbeReleaseAsync();
@@ -118,8 +120,10 @@ public partial class MainWindow : Window
             var dot = new Border
             {
                 Width = 30, Height = 30, CornerRadius = new CornerRadius(15),
-                Background = new SolidColorBrush(Color.FromRgb(238, 242, 249)),
-                Child = new TextBlock { Text = (i + 1).ToString(), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.SemiBold }
+                Background = Brushes.Transparent,
+                BorderBrush = Theme("CardBorder"),
+                BorderThickness = new Thickness(1),
+                Child = new TextBlock { Text = (i + 1).ToString(), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontFamily = (FontFamily)FindResource("MonoFont"), FontWeight = FontWeights.SemiBold }
             };
             var title = new TextBlock { Text = titles[i], FontWeight = FontWeights.SemiBold, FontSize = 13 };
             var sub = new TextBlock { Text = subtitles[i], Foreground = (Brush)FindResource("TextSecondary"), FontSize = 11, Margin = new Thickness(0, 3, 0, 0) };
@@ -139,10 +143,12 @@ public partial class MainWindow : Window
         CompactStepText.Text = StepCounter.Text;
         for (var i = 0; i < _indicators.Count; i++)
         {
-            _indicators[i].Dot.Background = i == contentStep ? new SolidColorBrush(Color.FromRgb(36, 88, 211)) : i < contentStep ? new SolidColorBrush(Color.FromRgb(210, 224, 255)) : new SolidColorBrush(Color.FromRgb(238, 242, 249));
-            _indicators[i].Title.Foreground = i == contentStep ? new SolidColorBrush(Color.FromRgb(30, 75, 185)) : (Brush)FindResource("TextSecondary");
+            _indicators[i].Dot.Background = i == contentStep ? Theme("AccentBrush") : i < contentStep ? Theme("OkSoft") : Brushes.Transparent;
+            _indicators[i].Dot.BorderBrush = i == contentStep ? Theme("AccentBrush") : i < contentStep ? Theme("OkBrush") : Theme("CardBorder");
+            _indicators[i].Dot.Effect = i == contentStep ? new System.Windows.Media.Effects.DropShadowEffect { Color = Color.FromRgb(61, 232, 255), BlurRadius = 16, ShadowDepth = 0, Opacity = 0.6 } : null;
+            _indicators[i].Title.Foreground = i == contentStep ? Theme("TextPrimary") : i < contentStep ? Theme("OkBrush") : Theme("TextSecondary");
             _indicators[i].Title.FontWeight = i == contentStep ? FontWeights.Bold : FontWeights.SemiBold;
-            ((TextBlock)_indicators[i].Dot.Child!).Foreground = i == contentStep ? Brushes.White : (Brush)FindResource("TextPrimary");
+            ((TextBlock)_indicators[i].Dot.Child!).Foreground = i == contentStep ? Theme("AccentInk") : i < contentStep ? Theme("OkBrush") : Theme("TextSecondary");
         }
         BackButton.IsEnabled = !_operationRunning && !isDone && contentStep > 0;
         CancelButton.IsEnabled = true;
@@ -151,6 +157,7 @@ public partial class MainWindow : Window
         if (isDone)
         {
             ShowDonePage();
+            AnimatePage();
             FocusPageHeading();
             return;
         }
@@ -163,6 +170,7 @@ public partial class MainWindow : Window
             case 4: ShowReviewPage(); break;
             default: ShowOperationPage(); break;
         }
+        AnimatePage();
         FocusPageHeading();
     }
 
@@ -217,7 +225,7 @@ public partial class MainWindow : Window
             FontFamily = new FontFamily("Consolas"), FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0)
         });
         if (!available)
-            stack.Children.Add(new TextBlock { Text = reason, Foreground = new SolidColorBrush(Color.FromRgb(153, 74, 28)), FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) });
+            stack.Children.Add(new TextBlock { Text = reason, Foreground = Theme("WarnBrush"), FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) });
         PageHost.Children.Add(card);
     }
 
@@ -323,7 +331,7 @@ public partial class MainWindow : Window
         AddLabel("Persistent data folder", "Choose a folder on this host. The assistant creates it if needed and does not clear existing contents.");
         var storageRow = new DockPanel { LastChildFill = true };
         _storageBox = new TextBox { Text = _state.StorageDirectory, IsReadOnly = true, ToolTip = "Choose a folder with Browse" };
-        var browse = new Button { Content = "Browse…", Margin = new Thickness(8, 6, 0, 14), MinWidth = 106 };
+        var browse = new Button { Style = (Style)FindResource("QuietButton"), Content = "Browse…", Margin = new Thickness(8, 6, 0, 14), MinWidth = 106 };
         browse.Click += BrowseStorage_Click;
         DockPanel.SetDock(browse, Dock.Right);
         storageRow.Children.Add(browse);
@@ -359,7 +367,7 @@ public partial class MainWindow : Window
         _prerequisiteStatus = new TextBlock { Text = _state.DockerStatus ?? "Checking the selected context…", Margin = new Thickness(0, 9, 0, 14), FontSize = 13 };
         stack.Children.Add(_prerequisiteStatus);
         var row = new StackPanel { Orientation = Orientation.Horizontal };
-        var check = new Button { Content = "Check again" };
+        var check = new Button { Style = (Style)FindResource("QuietButton"), Content = "Check again" };
         check.Click += async (_, _) => await ProbeDockerAsync();
         row.Children.Add(check);
         _installDockerButton = new Button { Content = "Install Docker Desktop automatically", Visibility = Visibility.Collapsed };
@@ -427,7 +435,7 @@ public partial class MainWindow : Window
         AddEyebrow("SETUP ACTIVITY");
         AddHeading("Preparing Watchdog Control.");
         AddBody("Progress below comes from the actual Docker operation and health checks. Cancel stops the active setup command where safe. An already launched prerequisite installer is allowed to finish before setup stops. If a container start has completed, cancel does not stop or remove the service.");
-        _operationProgress = new ProgressBar { Height = 8, IsIndeterminate = true, Margin = new Thickness(0, 12, 0, 18), Foreground = new SolidColorBrush(Color.FromRgb(36, 88, 211)) };
+        _operationProgress = new ProgressBar { Height = 8, IsIndeterminate = true, Margin = new Thickness(0, 12, 0, 18), Foreground = Theme("AccentBrush") };
         PageHost.Children.Add(_operationProgress);
         var card = NewCard();
         _operationOutput = new TextBlock { Text = _state.LastOperationSummary ?? "Waiting for setup to start.", FontFamily = new FontFamily("Consolas"), FontSize = 12, MaxHeight = 300, TextWrapping = TextWrapping.Wrap };
@@ -474,7 +482,7 @@ public partial class MainWindow : Window
         }
         AddCallout("Release", $"Tag: {_state.ReleaseTag}\nSource: {_state.SourceSha}\nImage: {_state.ImageReference}", "Package");
         AddCallout("Data folder", _state.StorageDirectory, "Folder");
-        var controlsButton = new Button { Content = "Open host controls", MinWidth = 164, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 10) };
+        var controlsButton = new Button { Style = (Style)FindResource("QuietButton"), Content = "Open host controls", MinWidth = 164, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 10) };
         controlsButton.Click += (_, _) =>
         {
             var entrypoint = Path.Combine(_state.ComposeDirectory, "host.bat");
@@ -1525,7 +1533,9 @@ public partial class MainWindow : Window
     private void SetStatus(string message, bool good)
     {
         StatusText.Text = message;
-        StatusDot.Fill = good ? new SolidColorBrush(Color.FromRgb(34, 150, 103)) : new SolidColorBrush(Color.FromRgb(96, 112, 138));
+        StatusDot.Fill = good ? Theme("OkBrush") : Theme("IdleBrush");
+        StatusPulse.Fill = StatusDot.Fill;
+        PulseStatus(good);
         RaiseLiveRegionChanged(StatusText);
     }
 
@@ -1655,7 +1665,7 @@ public partial class MainWindow : Window
     private static HttpClient CreateHttpClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("WatchdogControlSetup/0.1.2");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("WatchdogControlSetup/0.2.0");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
     }
@@ -1670,7 +1680,7 @@ public partial class MainWindow : Window
 
     private void AddEyebrow(string text)
     {
-        var label = new TextBlock { Text = text, Foreground = new SolidColorBrush(Color.FromRgb(36, 88, 211)), FontWeight = FontWeights.Bold, FontSize = 12, Margin = new Thickness(0, 0, 0, 12) };
+        var label = new TextBlock { Text = text.ToUpperInvariant(), Foreground = Theme("AccentBrush"), FontFamily = (FontFamily)FindResource("MonoFont"), FontSize = 11.5, Margin = new Thickness(0, 0, 0, 12) };
         AutomationProperties.SetName(label, text);
         PageHost.Children.Add(label);
     }
@@ -1679,7 +1689,8 @@ public partial class MainWindow : Window
         _pageHeading = new TextBlock
         {
             Text = text,
-            FontSize = 30,
+            FontSize = 34,
+            FontFamily = (FontFamily)FindResource("DisplayFont"),
             FontWeight = FontWeights.SemiBold,
             Margin = new Thickness(0, 0, 0, 14),
             LineHeight = 38,
@@ -1696,7 +1707,8 @@ public partial class MainWindow : Window
     }
     private Border NewCard()
     {
-        var border = new Border { Background = new SolidColorBrush(Color.FromRgb(249, 250, 253)), BorderBrush = new SolidColorBrush(Color.FromRgb(228, 233, 242)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18), Margin = new Thickness(0, 12, 0, 12), Child = new StackPanel() };
+        var border = new Border { Background = Theme("CardBackground"), BorderBrush = Theme("CardBorder"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18), Margin = new Thickness(0, 12, 0, 12), Child = new StackPanel() };
+        AnimateIn(border, PageHost.Children.Count);
         return border;
     }
     private void AddCallout(string title, string message, string icon)
@@ -1723,6 +1735,55 @@ public partial class MainWindow : Window
         text.Inlines.Add(link);
         stack.Children.Add(text);
         PageHost.Children.Add(card);
+    }
+
+    private Brush Theme(string key) => (Brush)FindResource(key);
+
+    private static bool MotionAllowed => SystemParameters.ClientAreaAnimation;
+
+    private void AnimatePage()
+    {
+        if (!MotionAllowed) return;
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        PageHost.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320)) { EasingFunction = ease });
+        PageOffset.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(380)) { EasingFunction = ease });
+    }
+
+    private static void AnimateIn(UIElement element, int order)
+    {
+        if (!MotionAllowed) return;
+        var transform = new TranslateTransform(0, 12);
+        element.RenderTransform = transform;
+        element.Opacity = 0;
+        var delay = TimeSpan.FromMilliseconds(60 + order * 45);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        element.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(360)) { BeginTime = delay, EasingFunction = ease });
+        transform.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(12, 0, TimeSpan.FromMilliseconds(420)) { BeginTime = delay, EasingFunction = ease });
+    }
+
+    private void StartScanLine()
+    {
+        if (!MotionAllowed)
+        {
+            ScanLine.Visibility = Visibility.Collapsed;
+            return;
+        }
+        var sweep = new DoubleAnimation(-140, Math.Max(ActualHeight, 780), TimeSpan.FromSeconds(9)) { RepeatBehavior = RepeatBehavior.Forever };
+        ScanLineOffset.BeginAnimation(TranslateTransform.YProperty, sweep);
+    }
+
+    private void PulseStatus(bool active)
+    {
+        if (!MotionAllowed || !active)
+        {
+            StatusPulse.BeginAnimation(OpacityProperty, null);
+            StatusPulse.Opacity = 0;
+            return;
+        }
+        var duration = TimeSpan.FromSeconds(1.8);
+        StatusPulse.BeginAnimation(OpacityProperty, new DoubleAnimation(0.6, 0, duration) { RepeatBehavior = RepeatBehavior.Forever });
+        StatusPulseScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.8, 2.4, duration) { RepeatBehavior = RepeatBehavior.Forever });
+        StatusPulseScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.8, 2.4, duration) { RepeatBehavior = RepeatBehavior.Forever });
     }
 
     private sealed record StepIndicator(Border Dot, TextBlock Title);

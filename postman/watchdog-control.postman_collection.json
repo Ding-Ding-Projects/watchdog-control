@@ -32,13 +32,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Origin", "value": "{{baseUrl}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"code\": \"{{ownerPairingCode}}\",\n  \"username\": \"{{ownerUsername}}\",\n  \"password\": \"{{ownerPassword}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/setup/pair",
             "description": "One-time operation. Requires HTTPS, pairingRequired=true, and the code from the assistant. The response sets the HttpOnly owner session cookie. Do not reuse or publish the pairing code."
@@ -49,13 +59,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Origin", "value": "{{baseUrl}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"{{ownerUsername}}\",\n  \"password\": \"{{ownerPassword}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/session",
             "description": "Requires HTTPS outside development. A successful response sets the owner session cookie. Pairing and sign-in are rate-limited."
@@ -75,7 +95,10 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Origin", "value": "{{baseUrl}}" }
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
             ],
             "url": "{{baseUrl}}/api/session",
             "description": "Revokes the current owner session and deletes the cookie."
@@ -100,13 +123,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Origin", "value": "{{baseUrl}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"displayName\": \"{{agentDisplayName}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/agents/invitations",
             "description": "Returns a single-use enrollment code that expires after ten minutes. Store it only in a local private environment and deliver it through the intended trusted setup path."
@@ -117,7 +150,10 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Origin", "value": "{{baseUrl}}" }
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
             ],
             "url": "{{baseUrl}}/api/agents/{{agentId}}",
             "description": "Revokes the selected enrolled agent. Subsequent bearer requests are rejected."
@@ -133,13 +169,24 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{agentInvitationCode}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentInvitationCode}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"agentId\": \"{{agentId}}\",\n  \"displayName\": \"{{agentDisplayName}}\",\n  \"platform\": \"Windows\",\n  \"agentVersion\": \"{{agentVersion}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/agent/enroll",
             "description": "Redeems a one-time owner invitation or the one-time bootstrap enrollment code. The response returns an agent bearer token once. Save it only in the local private environment. Prefer the product agent for real enrollment and heartbeat traffic."
@@ -150,13 +197,24 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{agentToken}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentToken}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"agentId\": \"{{agentId}}\",\n  \"displayName\": \"{{agentDisplayName}}\",\n  \"platform\": \"Windows\",\n  \"hostname\": \"{{hostName}}\",\n  \"operatingSystem\": \"Windows\",\n  \"agentVersion\": \"{{agentVersion}}\",\n  \"collectedAt\": \"{{collectedAt}}\",\n  \"uptimeSeconds\": 0,\n  \"cpuPercent\": null,\n  \"memoryUsedBytes\": null,\n  \"memoryTotalBytes\": null,\n  \"services\": [],\n  \"processes\": [],\n  \"volumes\": [],\n  \"networks\": [],\n  \"events\": [],\n  \"firewall\": { \"domain\": \"unknown\", \"private\": \"unknown\", \"public\": \"unknown\" },\n  \"updates\": { \"status\": \"unknown\", \"lastCheckedAt\": null, \"pending\": [] }\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/agent/heartbeat",
             "description": "Accepts bounded typed HostSnapshot data. Empty example arrays are schema guidance only, not a valid host observation. Do not hand-author or submit fabricated host data; the real agent constructs this payload."
@@ -167,7 +225,11 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{agentToken}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentToken}}",
+                "type": "text"
+              }
             ],
             "url": "{{baseUrl}}/api/agent/poll",
             "description": "Updates the agent's last-seen time and may return one queued operation. The real agent polls automatically."
@@ -178,13 +240,24 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{agentToken}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentToken}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"operationId\": \"{{operationId}}\",\n  \"status\": \"succeeded\",\n  \"result\": \"{{operationResult}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/agent/results",
             "description": "The server accepts results only for an operation that is currently running on this agent. A real agent sends the actual outcome; never submit a made-up result."
@@ -200,13 +273,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Origin", "value": "{{baseUrl}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"kind\": \"system.refresh\",\n  \"targetId\": null,\n  \"confirmationPhrase\": null\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/hosts/{{hostId}}/operations",
             "description": "Only system.refresh, network.flushDns, service.start, service.stop, service.restart, and process.terminate are supported. Service and process targets must exist in the latest host snapshot. Mutating service/process operations require the exact phrase returned by a 409 confirmation-required response. Send only after reviewing the actual target and impact."
@@ -217,13 +300,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Origin", "value": "{{baseUrl}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"kind\": \"host.restart\",\n  \"hostId\": \"{{hostId}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/hosts/{{hostId}}/power/prepare",
             "description": "Returns a 90-second challenge only when the enrolled host is recently online and the requested action is supported. Inspect hostName, kind, confirmationPhrase, and expiresAt before any confirmation request. Supported kinds are host.restart and host.shutdown."
@@ -234,13 +327,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Origin", "value": "{{baseUrl}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"confirmationPhrase\": \"{{powerConfirmationPhrase}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/api/power/{{powerChallengeId}}/confirm",
             "description": "Destructive action. Run manually only after reviewing the exact target and consequence. Copy the exact phrase from the unexpired prepare response. Never run this example as an unattended batch."
@@ -256,25 +359,234 @@
           }
         }
       ]
+    },
+    {
+      "name": "Slop Machine remote control",
+      "description": "Typed remote agent operations for the codex command-line tool. One-time sign-in and pairing codes are returned only by the remote view and never stored on disk.",
+      "item": [
+        {
+          "name": "Read remote agent view",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/hosts/{{hostId}}/codex",
+            "description": "Returns the latest status, unexpired one-time codes, and recent remote agent operations. Responses are not cached."
+          }
+        },
+        {
+          "name": "Run remote agent status check",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/hosts/{{hostId}}/operations",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"codex.status\",\n  \"targetId\": null,\n  \"confirmationPhrase\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Start device-code sign-in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/hosts/{{hostId}}/operations",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"codex.login.start\",\n  \"targetId\": null,\n  \"confirmationPhrase\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Cancel device-code sign-in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/hosts/{{hostId}}/operations",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"codex.login.cancel\",\n  \"targetId\": null,\n  \"confirmationPhrase\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Start remote control",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/hosts/{{hostId}}/operations",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"codex.remote.start\",\n  \"targetId\": null,\n  \"confirmationPhrase\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Stop remote control",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/hosts/{{hostId}}/operations",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"codex.remote.stop\",\n  \"targetId\": null,\n  \"confirmationPhrase\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Create phone pairing code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/hosts/{{hostId}}/operations",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"codex.remote.pair\",\n  \"targetId\": null,\n  \"confirmationPhrase\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Sign the tool out",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/hosts/{{hostId}}/operations",
+            "description": "Requires the exact phrase returned by a 409 confirmation-required response.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"codex.logout\",\n  \"targetId\": null,\n  \"confirmationPhrase\": \"SIGN OUT REMOTE AGENT ON {{hostName}}\"\n}"
+            }
+          }
+        }
+      ]
     }
   ],
   "variable": [
-    { "key": "baseUrl", "value": "https://localhost:8443", "type": "string" },
-    { "key": "ownerPairingCode", "value": "", "type": "string" },
-    { "key": "ownerUsername", "value": "", "type": "string" },
-    { "key": "ownerPassword", "value": "", "type": "string" },
-    { "key": "agentDisplayName", "value": "", "type": "string" },
-    { "key": "agentInvitationCode", "value": "", "type": "string" },
-    { "key": "agentId", "value": "", "type": "string" },
-    { "key": "agentToken", "value": "", "type": "string" },
-    { "key": "agentVersion", "value": "", "type": "string" },
-    { "key": "hostId", "value": "", "type": "string" },
-    { "key": "hostName", "value": "", "type": "string" },
-    { "key": "serviceId", "value": "", "type": "string" },
-    { "key": "operationId", "value": "", "type": "string" },
-    { "key": "operationResult", "value": "", "type": "string" },
-    { "key": "powerChallengeId", "value": "", "type": "string" },
-    { "key": "powerConfirmationPhrase", "value": "", "type": "string" },
-    { "key": "collectedAt", "value": "", "type": "string" }
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:8443",
+      "type": "string"
+    },
+    {
+      "key": "ownerPairingCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ownerUsername",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ownerPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agentDisplayName",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agentInvitationCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agentToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agentVersion",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "hostId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "hostName",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "serviceId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "operationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "operationResult",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "powerChallengeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "powerConfirmationPhrase",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "collectedAt",
+      "value": "",
+      "type": "string"
+    }
   ]
 }

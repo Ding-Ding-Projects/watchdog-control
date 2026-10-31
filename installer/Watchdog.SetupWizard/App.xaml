@@ -6,26 +6,84 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Blue" SecondaryColor="Cyan" />
+                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="Cyan" SecondaryColor="DeepPurple" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            <SolidColorBrush x:Key="WindowBackground" Color="#F7F8FC" />
-            <SolidColorBrush x:Key="SurfaceBackground" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="TextPrimary" Color="#171B24" />
-            <SolidColorBrush x:Key="TextSecondary" Color="#5E6675" />
+
+            <!-- Command centre palette shared with the controller dashboard -->
+            <Color x:Key="GroundColor">#05070B</Color>
+            <Color x:Key="AccentColor">#3DE8FF</Color>
+            <SolidColorBrush x:Key="WindowBackground" Color="#05070B" />
+            <SolidColorBrush x:Key="RailBackground" Color="#0A0E15" />
+            <SolidColorBrush x:Key="SurfaceBackground" Color="#0C121B" />
+            <SolidColorBrush x:Key="CardBackground" Color="#101722" />
+            <SolidColorBrush x:Key="CardBorder" Color="#22303F" />
+            <SolidColorBrush x:Key="Hairline" Color="#1A2533" />
+            <SolidColorBrush x:Key="TextPrimary" Color="#E6EDF5" />
+            <SolidColorBrush x:Key="TextSecondary" Color="#8A9AB0" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#3DE8FF" />
+            <SolidColorBrush x:Key="AccentSoft" Color="#0C2A33" />
+            <SolidColorBrush x:Key="AccentInk" Color="#04121A" />
+            <SolidColorBrush x:Key="OkBrush" Color="#7CFFB2" />
+            <SolidColorBrush x:Key="OkSoft" Color="#0B2219" />
+            <SolidColorBrush x:Key="WarnBrush" Color="#FFB23E" />
+            <SolidColorBrush x:Key="IdleBrush" Color="#56657A" />
+            <LinearGradientBrush x:Key="PrimaryGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#3DE8FF" Offset="0" />
+                <GradientStop Color="#4F8BFF" Offset="1" />
+            </LinearGradientBrush>
+            <FontFamily x:Key="DisplayFont">Bahnschrift SemiBold, Segoe UI Variable Display, Segoe UI</FontFamily>
+            <FontFamily x:Key="BodyFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+            <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas</FontFamily>
+
             <Style TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
                 <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
             </Style>
             <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
                 <Setter Property="MinHeight" Value="44" />
                 <Setter Property="Padding" Value="20,10" />
                 <Setter Property="Margin" Value="4" />
+                <Setter Property="Background" Value="{StaticResource PrimaryGradient}" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="{StaticResource AccentInk}" />
+                <Setter Property="materialDesign:ButtonAssist.CornerRadius" Value="12" />
+                <Setter Property="materialDesign:ElevationAssist.Elevation" Value="Dp0" />
+                <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+                <Setter Property="RenderTransform">
+                    <Setter.Value>
+                        <ScaleTransform ScaleX="1" ScaleY="1" />
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Effect">
+                    <Setter.Value>
+                        <DropShadowEffect Color="#3DE8FF" BlurRadius="18" ShadowDepth="0" Opacity="0.35" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="QuietButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignOutlinedButton}">
+                <Setter Property="MinHeight" Value="44" />
+                <Setter Property="Padding" Value="18,10" />
+                <Setter Property="Margin" Value="4" />
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+                <Setter Property="BorderBrush" Value="{StaticResource CardBorder}" />
+                <Setter Property="materialDesign:ButtonAssist.CornerRadius" Value="12" />
             </Style>
             <Style TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
                 <Setter Property="MinHeight" Value="48" />
                 <Setter Property="Padding" Value="12,8" />
                 <Setter Property="Margin" Value="0,6,0,14" />
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+                <Setter Property="materialDesign:HintAssist.Foreground" Value="{StaticResource AccentBrush}" />
+                <Setter Property="materialDesign:TextFieldAssist.UnderlineBrush" Value="{StaticResource AccentBrush}" />
+            </Style>
+            <Style TargetType="CheckBox" BasedOn="{StaticResource MaterialDesignCheckBox}">
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+            </Style>
+            <Style TargetType="ProgressBar" BasedOn="{StaticResource MaterialDesignLinearProgressBar}">
+                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                <Setter Property="Background" Value="{StaticResource Hairline}" />
             </Style>
         </ResourceDictionary>
     </Application.Resources>

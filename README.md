@@ -2,9 +2,9 @@
 
 [Documentation site](https://ding-ding-projects.github.io/watchdog-control/)
 
-| Overview | Security | Operations | Documentation |
-| --- | --- | --- | --- |
-| [Purpose](#purpose) | [Security model](docs/security/README.md) | [Run locally](docs/operations/README.md) | [documentation website source](docs/README.md) |
+| Overview | Remote | Security | Operations | Documentation |
+| --- | --- | --- | --- | --- |
+| [Purpose](#purpose) | [Slop Machine remote control](#slop-machine-remote-control) | [Security model](docs/security/README.md) | [Run locally](docs/operations/README.md) | [documentation website source](docs/README.md) |
 
 ## Purpose
 
@@ -20,6 +20,24 @@ The portable setup file embeds `compose.yaml` and exposes a one-click welcome-sc
 
 The updated `v0.1.2` single-file package and a current built-interface screenshot remain pending. Cross-device LAN reachability, owner authentication, host operations, and live documentation routes remain separate verification steps. The local host health result does not establish those behaviors.
 
+## Slop Machine remote control
+
+The **Slop Machine** page drives the `codex` command-line tool on a paired computer: a status check,
+device-code sign-in assist with the one-time code and a countdown, remote control start and stop,
+and a phone pairing code for the ChatGPT phone app. Every command is fixed in the agent, signing out
+needs a typed phrase, and one-time codes stay in controller memory instead of the data file or audit
+log. See [Slop Machine remote control](docs/features/remote-agent.md). Running it on a real Windows
+host is not verified yet.
+
+## Command centre dashboard
+
+Version 0.2.0 redesigns every interface as a command centre: host radar, live telemetry, animated
+gauges, a command palette (`Ctrl+Shift+F`), a regex builder on every search, context menus, a
+notification centre, and settings for language (English, Cantonese or both), theme, accent colour,
+text size, contrast, motion, focus modes, narration and sounds. See
+[Dashboard experience](docs/features/dashboard-experience.md) and the design reference in
+[`design/redesign-2026-10`](design/redesign-2026-10/README.md).
+
 ## One-click setup and hosting
 
 `WatchdogControlSetup.exe` is a self-contained portable setup tool. It embeds `compose.yaml`, verifies its SHA-256 against the selected release manifest, and offers **Host Watchdog Control on this computer** on the welcome screen. The executable launches without installation. On a computer with an already-ready local Docker Engine and Compose plugin, that action pulls the release-pinned image, writes only this service's configuration and protected local files, starts the Watchdog Control project, and checks HTTPS health and the selected LAN URL. It installs no additional software on this ready-engine path.
@@ -32,7 +50,22 @@ Double-clicking `host.bat` opens a keyboard menu. If no choice is made within ei
 
 ## Screenshots
 
-Current built-interface screenshots will be added after the revised setup assistant is packaged and its real interface is inspected. Earlier blank captures remain historical evidence and are not presented as current UI proof.
+These are genuine captures of the rebuilt dashboard running against a local development controller
+with a test agent supplying readings. They are not captures of a Windows host.
+
+| Command centre | Slop Machine sign-in assist |
+| --- | --- |
+| ![Command centre with host radar, telemetry, gauges and event stream](docs/assets/screens/command-centre.png) | ![Slop Machine page showing the link topology, setup steps and a one-time sign-in code](docs/assets/screens/remote-sign-in.png) |
+
+| Command palette | Settings |
+| --- | --- |
+| ![Command palette filtering restart commands](docs/assets/screens/command-palette.png) | ![Settings for language, appearance, focus, sound and refresh](docs/assets/screens/settings.png) |
+
+| Daylight theme, English and Cantonese | Phone |
+| --- | --- |
+| ![Command centre in the light theme with bilingual labels](docs/assets/screens/daylight-bilingual.png) | ![Command centre at phone width](docs/assets/screens/phone.png) |
+
+The redesigned setup assistant builds cleanly, but its window has not been captured on Windows yet.
 
 ## Local publication checks
 
@@ -46,4 +79,6 @@ Configure the repository-local hooks with `git config --local core.hooksPath .gi
 - [Security](docs/security/README.md)
 - [Operations](docs/operations/README.md)
 - [Feature documentation](docs/features/README.md)
+- [Slop Machine remote control](docs/features/remote-agent.md)
+- [Dashboard experience](docs/features/dashboard-experience.md)
 - [Wiki source inventory](docs/wiki/README.md)

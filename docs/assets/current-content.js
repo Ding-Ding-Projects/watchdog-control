@@ -85,6 +85,20 @@
   ];
 
   const implemented = 'Implemented in source; runtime not verified';
+  data.workflows.push({
+    id: 'remote-agent',
+    title: 'Run Slop Machine remotely',
+    summary: 'Sign the codex command-line tool in with a device code, start remote control, and pair a phone from the dashboard.',
+    state: 'Implemented in source; Windows host verification pending',
+    article: 'remote-agent',
+    steps: [
+      'Open Slop Machine in the dashboard and select the computer.',
+      'Run a status check to confirm the tool, its version, and whether it is signed in.',
+      'Start sign-in, open the sign-in page on any device, and enter the one-time code shown in the dashboard.',
+      'Start remote control, create a pairing code, and enter it in the ChatGPT phone app under Remote.'
+    ]
+  });
+
   data.siteInventory = [
     ['host-health', 'Host health and freshness', implemented, 'The controller and Windows agent define live host records. A real enrolled host and fresh observation have not been verified.'],
     ['services-processes', 'Services and processes', implemented, 'The dashboard and server define typed, target-bound operations. Runtime inspection and action results remain unverified.'],
@@ -100,6 +114,7 @@
   ];
 
   data.wiki = [
+    {id:'remote-agent',title:'Slop Machine remote control',state:'Source implemented; Windows host verification pending',body:['The dashboard drives the codex command-line tool on a paired computer: status, device-code sign-in assist, remote control start and stop, and phone pairing.','One-time codes stay in controller memory and never reach disk or the audit log.','A Windows host run has not been verified yet.']},
     {id:'overview',title:'Project overview',state:'v0.1.1 released; host acceptance partial',body:['Watchdog Control has a browser dashboard, authenticated API, Windows host agent, tracked Compose deployment, host controls, and tailored portable setup file.','Normal release v0.1.1 includes the corrected environment-sample name and Compose checksum. The local one-click setup flow started the published image and returned HTTPS health HTTP 200. A concurrent progress-save collision then closed the setup window; a source fix and v0.1.2 package are pending verification.','This documentation is separate from the product and cannot access a Windows host.']},
     {id:'architecture',title:'System architecture',state:'Source implemented; runtime pending',body:['The implementation separates the browser dashboard, authenticated controller API, and Windows host agent.','The server validates fixed operation identifiers and target records. The agent polls for approved work and returns bounded results.','The source builds locally; network, authorization, and installed-host behavior remain unverified.']},
     {id:'security',title:'Security and identity',state:'Source implemented; runtime pending',body:['The product source includes first-owner pairing, authenticated sessions, agent enrollment, revocation, TLS pinning, and audit records.','The browser does not receive an arbitrary shell form. Server-side operation checks and exact confirmation paths are defined in source.','No installed runtime or real host action has been verified.']},
@@ -159,6 +174,19 @@
       ['Setup and deployment', 'The v0.1.1 portable setup file bundles Compose and its host action started the image and returned HTTPS health HTTP 200 without installing software. A concurrent progress-save collision closed the setup window after service start. Source now uses unique temporary files; the v0.1.2 package, current GUI screenshots, and second-device access remain pending.'],
       ['Documentation surface', 'The guide includes task routes and local demonstrations. Complete settings coverage, full RegexBuddy parity, translated content, built-screen inspection, and deployed interaction evidence remain unfinished.'],
       ['API collections', 'The category and master Postman collection now covers every source-defined controller route. It remains an example and no controller request has been run against the hosted service.']
+    ]
+  };
+  data.articles['remote-agent'] = {
+    title: 'Slop Machine remote control', category: 'Remote', state: 'Implemented in source; Windows host verification pending',
+    lead: 'The dashboard can drive the codex command-line tool on a paired Windows computer: check its status, assist a device-code sign-in, start and stop remote control, and create a phone pairing code.',
+    sections: [
+      ['What runs', 'The agent runs fixed commands only: --version, login status, login with device-code sign-in, logout, and remote-control start, stop, status and pair. The controller and the browser can never choose the executable, its arguments, or a file path.'],
+      ['Which account', 'By default the tool runs as the Windows user signed in at the computer console, so sign-in and sessions belong to that user. An administrator can set the service account instead, a fixed executable path, or a separate data folder in codex.json inside the protected agent data folder.'],
+      ['Sign-in assist', 'Starting sign-in launches device-code sign-in on the computer and shows the sign-in page and one-time code in the dashboard with a countdown. The sign-in link is only offered for openai.com and chatgpt.com addresses. Device-code sign-in must be allowed for the account.'],
+      ['Pairing a phone', 'After remote control starts, Create pairing code shows the manual pairing code. In the ChatGPT phone app, open Remote, choose Enter code manually, and confirm the account on the phone.'],
+      ['Codes stay out of records', 'One-time sign-in and pairing codes are kept only in controller memory until they expire. Operation records, the audit log, exports and the controller data file contain a redacted placeholder instead.'],
+      ['Signing out', 'Sign out requires the exact typed phrase shown in the dashboard and removes the saved sign-in on that computer.'],
+      ['Verification state', 'The controller flow is covered by a local end-to-end check. Running the tool on a real Windows host, including the signed-in user launch path, has not been verified yet.']
     ]
   };
 })();
