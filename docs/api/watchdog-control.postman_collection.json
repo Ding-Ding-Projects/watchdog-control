@@ -500,6 +500,119 @@
           }
         }
       ]
+    },
+    {
+      "name": "Controller terminal",
+      "description": "Owner-only PowerShell and CMD sessions on the controller computer. Refused through temporary public access, tunnels and proxies.",
+      "item": [
+        {
+          "name": "Read terminal capabilities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/terminal/capabilities",
+            "description": "Computer, platform, account, container flag, available shells and limits."
+          }
+        },
+        {
+          "name": "List terminal sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/terminal/sessions",
+            "description": "The signed-in owner's sessions."
+          }
+        },
+        {
+          "name": "Start terminal session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/terminal/sessions",
+            "description": "Starts PowerShell or CMD.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shell\": \"powershell\",\n  \"name\": \"Maintenance\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Read terminal events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/terminal/sessions/{{terminalSessionId}}?after=0&wait=true",
+            "description": "Ordered events after sequence N. wait holds the request up to 20 seconds for new output."
+          }
+        },
+        {
+          "name": "Send terminal command",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/terminal/sessions/{{terminalSessionId}}/input",
+            "description": "Runs a command, or writes standard input when mode is stdin.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Get-Date\",\n  \"mode\": \"command\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Rename terminal session",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/terminal/sessions/{{terminalSessionId}}",
+            "description": "Renames the session.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maintenance\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Stop terminal session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/terminal/sessions/{{terminalSessionId}}?forget=false",
+            "description": "Stops the shell and its process tree. forget=true also removes it from the list."
+          }
+        }
+      ]
     }
   ],
   "variable": [
@@ -587,6 +700,10 @@
       "key": "collectedAt",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "terminalSessionId",
+      "value": ""
     }
   ]
 }

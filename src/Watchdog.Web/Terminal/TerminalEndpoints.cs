@@ -18,6 +18,10 @@ public static class TerminalEndpoints
     public static void MapTerminal(this WebApplication app)
     {
         var group = app.MapGroup("/api/terminal");
+        group.AddEndpointFilter(async (invocation, next) =>
+            ArrivedThroughProxy(invocation.HttpContext.Request)
+                ? Results.Json(new { error = "terminal-local-network-only" }, statusCode: StatusCodes.Status403Forbidden)
+                : await next(invocation));
 
         group.MapGet("/capabilities", (HttpContext context, SessionService sessions, TerminalService terminal) =>
             sessions.GetOwner(context) is null ? Results.Unauthorized() : Results.Ok(terminal.Capabilities()));
@@ -104,6 +108,30 @@ public static class TerminalEndpoints
             var found = forget == true ? terminal.Forget(owner.Username, id) : terminal.Stop(owner.Username, id);
             return found ? Results.NoContent() : Results.NotFound(new { error = "session-not-found" });
         });
+    }
+
+    private static readonly string[] ForwardingHeaders =
+    [
+        "Forwarded", "X-Forwarded-For", "X-Forwarded-Host", "X-Forwarded-Proto", "X-Real-IP",
+        "CF-Connecting-IP", "CF-Ray", "CF-Visitor", "Cdn-Loop", "True-Client-IP"
+    ];
+
+    /// <summary>
+    /// Temporary public access forwards internet traffic to the controller from loopback, which
+    /// passes the private-address check. The terminal therefore also refuses any request that
+    /// carries proxy or tunnel forwarding headers or a tunnel host name, so it only works for a
+    /// browser connected directly over the local network.
+    /// </summary>
+    public static bool ArrivedThroughProxy(HttpRequest request)
+    {
+        foreach (var header in ForwardingHeaders)
+        {
+            if (request.Headers.ContainsKey(header)) return true;
+        }
+
+        var host = request.Host.Host;
+        return host.EndsWith(".trycloudflare.com", StringComparison.OrdinalIgnoreCase) ||
+               host.EndsWith(".cfargotunnel.com", StringComparison.OrdinalIgnoreCase);
     }
 
     private static async Task<T?> ReadAsync<T>(HttpContext context) where T : class

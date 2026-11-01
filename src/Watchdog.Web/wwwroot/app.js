@@ -27,6 +27,7 @@
     updates: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',
     firewall: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
     remote: '<path d="M4 17l6-6-6-6M12 19h8"/>',
+    terminal: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/>',
     operations: '<path d="M5 3l14 9-14 9z"/>',
     audit: '<path d="M8 3h8l4 4v14H4V3h4M9 12h6M9 16h6M9 8h2"/>',
     settings: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
@@ -50,6 +51,7 @@
     { id: "updates", group: "monitor", icon: "updates", title: "Updates", zh: "更新", description: "Review the latest Windows Update status reported by the computer.", zhDescription: "查看電腦回報嘅 Windows Update 狀態。" },
     { id: "firewall", group: "monitor", icon: "firewall", title: "Firewall", zh: "防火牆", description: "Review the reported firewall profile state.", zhDescription: "查看回報嘅防火牆設定檔狀態。" },
     { id: "remote", group: "remote", icon: "remote", title: "Slop Machine", zh: "Slop Machine", description: "Sign the codex command-line tool in, start remote control and pair a phone.", zhDescription: "幫 codex 命令列工具登入、啟動遙控同配對手機。" },
+    { id: "terminal", group: "remote", icon: "terminal", title: "Terminal", zh: "終端機", description: "Run PowerShell or CMD commands on the controller computer, as the controller's own account.", zhDescription: "用控制器自己嘅帳戶，喺控制器電腦執行 PowerShell 或 CMD 指令。" },
     { id: "hosts", group: "remote", icon: "hosts", title: "Computers and pairing", zh: "電腦同配對", description: "Pair computers, review their connection and revoke access.", zhDescription: "配對電腦、查看連線同撤銷存取權。" },
     { id: "operations", group: "records", icon: "operations", title: "Operations", zh: "操作", description: "Inspect the action queue and its results.", zhDescription: "檢查操作佇列同結果。" },
     { id: "audit", group: "records", icon: "audit", title: "Audit", zh: "審計", description: "Review recent administrative actions.", zhDescription: "查看最近嘅管理操作。" },
@@ -80,6 +82,7 @@
     updates: "This page only reads update status. Install updates on the computer during a time that suits you.",
     firewall: "The firewall blocks unexpected connections. All three profiles should usually be on.",
     remote: "Work top to bottom: check the tool, sign in, start remote control, then pair your phone.",
+    terminal: "This terminal runs on the controller computer, not on paired computers. Type one command, press Enter and read the reply.",
     hosts: "Pairing gives a computer a one-time code. Revoking stops it from talking to this dashboard.",
     operations: "Every action you request waits here until the computer reports a result.",
     audit: "The audit log records who did what and when. It never stores passwords or one-time codes.",
@@ -308,7 +311,8 @@
       "unsupported-operation": "That action is not supported.",
       "confirmation-required": "Type the exact confirmation phrase.",
       "service-not-in-current-inventory": "That service is no longer in the latest inventory. Refresh and try again.",
-      "process-not-in-current-inventory": "That process is no longer running. Refresh and try again."
+      "process-not-in-current-inventory": "That process is no longer running. Refresh and try again.",
+      "terminal-local-network-only": "The terminal only works from a browser on the local network. It is unavailable through temporary public access or any proxy."
     };
     return known[code] || code;
   }
@@ -534,7 +538,7 @@
       '<button class="icon-button" type="button" data-action="refresh" aria-label="' + escapeHtml(say("Refresh")) + '" title="' + escapeHtml(say("Refresh")) + '">' + svg("refresh") + '</button>' +
       '<button class="icon-button" type="button" data-action="notifications" aria-label="' + escapeHtml(say("Notifications")) + ', ' + unread + ' unread">' + svg("bell") + '<span class="badge-count" data-bell-count' + (unread ? "" : " hidden") + '>' + unread + '</span></button>' +
       '<button class="button" type="button" data-action="logout">' + escapeHtml(say("Sign out")) + '</button></div></header>' +
-      '<aside class="sidebar">' + navigationHtml() + '<div class="sidebar-footer">' + escapeHtml(versionText.toUpperCase()) + '<br>' + escapeHtml(state.user ? state.user.username || "owner" : "") + ' · TYPED OPERATIONS ONLY</div></aside>' +
+      '<aside class="sidebar">' + navigationHtml() + '<div class="sidebar-footer">' + escapeHtml(versionText.toUpperCase()) + '<br>' + escapeHtml(state.user ? state.user.username || "owner" : "") + ' · TYPED HOST OPERATIONS</div></aside>' +
       '<main class="main" id="main-content" tabindex="-1">' + schoolTip() + content +
       '<p class="footer-note">Controller time ' + escapeHtml(formatDate(state.dashboard && state.dashboard.serverTime)) + ' · browser preferences stay on this device</p></main></div>';
   }
@@ -947,6 +951,479 @@
     scheduleRemotePolling();
   }
 
+  /* Terminal: owner-only PowerShell and CMD sessions on the controller computer. Text from the
+     shell is only ever inserted as text nodes. */
+  function terminalState() {
+    if (!state.terminal) {
+      state.terminal = { caps: null, sessions: [], activeId: null, events: Object.create(null), cursor: Object.create(null), history: Object.create(null), historyIndex: Object.create(null),
+        drafts: Object.create(null), clearedAfter: Object.create(null), follow: true, unseen: 0, conn: "ok", error: "", loop: 0, listTimer: null, scrollTop: null };
+    }
+    return state.terminal;
+  }
+
+  const terminalErrors = {
+    "terminal-disabled": "The terminal is turned off on this controller.",
+    "unsupported-shell": "Only PowerShell and CMD are supported.",
+    "shell-unavailable": "That shell is not available where the controller runs.",
+    "session-limit-reached": "Four sessions are already open. Stop one first.",
+    "session-not-found": "That session no longer exists. The controller may have restarted.",
+    "session-not-running": "The session has ended. Start a new one.",
+    "command-running": "A command is still running. Your text goes to its input instead.",
+    "no-running-command": "No command is waiting for input.",
+    "empty-command": "Type a command first.",
+    "input-too-long": "That is longer than the 16 KB input limit.",
+    "invalid-session-name": "Use a name between 1 and 40 characters."
+  };
+
+  function activeTerminalSession() {
+    const terminal = terminalState();
+    return terminal.sessions.find(session => session.id === terminal.activeId) || null;
+  }
+
+  function terminalStateLabel(session) {
+    if (!session) return "unknown";
+    return ({ starting: "Starting", idle: "Ready", running: "Running", stopped: "Stopped", exited: "Exited", expired: "Expired", failed: "Could not start" })[session.state] || "Unknown";
+  }
+
+  function terminalStateChip(session) {
+    const kind = session.state === "running" ? "on" : session.state === "idle" ? "ok" : session.state === "starting" ? "warn" : "bad";
+    return '<span class="chip ' + kind + '">' + (session.state === "running" ? '<span class="live-dot"></span>' : "") + escapeHtml(terminalStateLabel(session)) + '</span>';
+  }
+
+  function terminalEnded(session) { return Boolean(session) && ["stopped", "exited", "expired", "failed"].includes(session.state); }
+
+  async function loadTerminal() {
+    const terminal = terminalState();
+    try {
+      const [caps, list] = await Promise.all([request("/api/terminal/capabilities"), request("/api/terminal/sessions")]);
+      terminal.caps = caps;
+      terminal.sessions = list.sessions || [];
+      terminal.error = "";
+      if (!terminal.sessions.some(session => session.id === terminal.activeId)) {
+        const live = terminal.sessions.filter(session => !terminalEnded(session));
+        terminal.activeId = (live[live.length - 1] || terminal.sessions[terminal.sessions.length - 1] || {}).id || null;
+      }
+    } catch (error) {
+      if (error.status === 401) return handleExpiredSession();
+      terminal.error = error.message;
+    }
+  }
+
+  function renderTerminal() {
+    const terminal = terminalState();
+    const caps = terminal.caps;
+    if (!caps) {
+      return pageHeading("terminal", "Controller computer") + (terminal.error
+        ? '<div class="notice danger"><strong>The terminal could not load.</strong><p>' + escapeHtml(terminal.error) + '</p><button class="button" type="button" data-action="refresh">Try again</button></div>'
+        : '<section class="panel" data-i="1"><p class="hint">Checking which shells this controller can start…</p></section>');
+    }
+    const session = activeTerminalSession();
+    const identity = '<span class="chip ' + (caps.container ? "warn" : "on") + '" title="Where commands run">' + escapeHtml(caps.executionLabel) + '</span>' +
+      '<span class="chip">account · ' + escapeHtml(caps.account) + '</span>';
+    const tabs = terminal.sessions.map(item => '<button class="t-tab' + (item.state === "running" ? " running" : "") + (terminalEnded(item) ? " ended" : "") + '" type="button" role="tab" data-action="terminal-tab" data-id="' + escapeHtml(item.id) + '" aria-selected="' + (item.id === terminal.activeId) + '">' +
+      '<span class="t-tab-dot" aria-hidden="true"></span><span>' + escapeHtml(item.name) + '</span><span class="sr-only">, ' + escapeHtml(terminalStateLabel(item)) + '</span></button>').join("") +
+      '<button class="t-tab add" type="button" data-action="terminal-new" aria-label="New session" title="New session">+</button>';
+    const heading = pageHeading("terminal", identity, session
+      ? '<button class="button" type="button" data-action="terminal-rename">Rename</button>' +
+        (terminalEnded(session)
+          ? '<button class="button" type="button" data-action="terminal-close">Close tab</button>'
+          : '<button class="button danger" type="button" data-action="terminal-stop">Stop session</button>')
+      : "");
+    const notices = (caps.enabled ? "" : '<div class="notice warning"><strong>The terminal is turned off.</strong><p>' + escapeHtml(caps.disabledReason || "") + '</p></div>') +
+      (terminal.error ? '<div class="notice danger"><strong>Terminal request failed.</strong><p>' + escapeHtml(terminal.error) + '</p></div>' : "") +
+      (caps.container ? '<div class="notice warning"><strong>This runs inside the controller container.</strong><p>Commands do not reach the Windows host. Use the paired computer pages for host actions.</p></div>' : "");
+    if (!session || terminal.showNew) {
+      const shells = caps.shells.map(shell => '<div class="t-shell' + (shell.available ? "" : " off") + '"><div class="t-shell-head"><h3>' + escapeHtml(shell.displayName) + '</h3>' +
+        (shell.available ? '<span class="chip ok">Available</span>' : '<span class="chip bad">Unavailable</span>') + '</div>' +
+        '<p class="hint mono">' + escapeHtml(shell.available ? shell.executable : shell.reason) + '</p>' +
+        '<button class="button' + (shell.available && caps.enabled ? " primary" : "") + '" type="button" data-action="terminal-start" data-shell="' + escapeHtml(shell.id) + '"' + (shell.available && caps.enabled ? "" : " disabled") + '>Start ' + escapeHtml(shell.displayName) + '</button></div>').join("");
+      const limits = caps.limits;
+      return heading + notices + (terminal.sessions.length ? '<div class="t-tabs" role="tablist" aria-label="Terminal sessions">' + tabs + '</div>' : "") +
+        '<section class="panel" data-i="1"><div class="panel-head"><h2>Start a session</h2><span class="lab">' + escapeHtml(caps.platform + " · " + caps.architecture) + '</span></div>' +
+        '<p class="hint">A session starts a real shell on ' + escapeHtml(caps.computer) + ' as ' + escapeHtml(caps.account) + '. Anything you type runs with that account\'s rights. Nothing is elevated for you.</p>' +
+        '<div class="t-shells">' + shells + '</div>' +
+        (caps.shells.every(shell => !shell.available) ? '<p class="hint">No shell is available here, so no session can start. PowerShell 7 (pwsh) can be installed on the controller computer to enable it.</p>' : "") +
+        (terminal.showNew && session ? '<div class="row-actions"><button class="button" type="button" data-action="terminal-new-cancel">Back to ' + escapeHtml(session.name) + '</button></div>' : "") + '</section>' +
+        '<section class="panel" data-i="2"><h2>Limits</h2><ul class="t-limits"><li><span class="lab">Sessions</span>' + limits.maxSessionsPerOwner + ' at once</li><li><span class="lab">Input</span>' + Math.round(limits.maxInputCharacters / 1024) + ' KB per send</li>' +
+        '<li><span class="lab">Output kept</span>' + escapeHtml(terminalChars(limits.maxRetainedOutputCharacters)) + '</li><li><span class="lab">Idle stop</span>' + limits.idleMinutes + ' minutes</li><li><span class="lab">Lifetime</span>' + limits.maxLifetimeHours + ' hours</li></ul>' +
+        '<p class="hint">Commands and output stay in controller memory only. The audit log records when sessions start and stop, never what was typed. Full-screen console programs are not supported.</p></section>';
+    }
+    const running = session.state === "running";
+    const ended = terminalEnded(session);
+    const draft = terminal.drafts[session.id] || "";
+    const elapsed = running && session.runningSince ? secondsAgo(session.runningSince) : null;
+    const kept = session.retainedCharacters / (caps.limits.maxRetainedOutputCharacters || 1);
+    const conn = terminal.conn === "ok" ? "" : '<span class="chip ' + (terminal.conn === "lost" ? "bad" : "warn") + '" role="status">' + (terminal.conn === "lost" ? "Connection lost · state unknown" : "Reconnecting…") + '</span>';
+    return heading + notices +
+      '<div class="t-tabs" role="tablist" aria-label="Terminal sessions">' + tabs + '</div>' +
+      '<section class="panel t-console" data-i="1" aria-labelledby="t-title"><div class="t-bar"><h2 id="t-title" class="sr-only">' + escapeHtml(session.name) + ' transcript</h2>' +
+      terminalStateChip(session) + '<span class="chip">' + escapeHtml(session.shellName) + '</span>' + (elapsed ? '<span class="chip on mono">' + escapeHtml(elapsed) + '</span>' : "") + conn +
+      '<span class="t-bar-spacer"></span>' +
+      '<button class="button small ghost" type="button" data-action="terminal-copy">Copy</button>' +
+      '<button class="button small ghost" type="button" data-action="terminal-export" data-format="txt">Export text</button>' +
+      '<button class="button small ghost" type="button" data-action="terminal-export" data-format="json">Export JSON</button>' +
+      '<button class="button small ghost" type="button" data-action="terminal-clear">Clear view</button></div>' +
+      '<div class="t-scroll" data-terminal-scroll tabindex="0" aria-label="Transcript"><ol class="t-transcript" data-transcript aria-live="off"></ol></div>' +
+      '<button class="t-follow" type="button" data-action="terminal-follow" data-terminal-follow' + (terminal.follow ? " hidden" : "") + '>' + (terminal.unseen ? terminal.unseen + " new · " : "") + 'Jump to latest</button>' +
+      '<div class="t-composer"><label class="sr-only" for="terminal-input">' + (running ? "Input for the running command" : "Command") + '</label>' +
+      '<textarea id="terminal-input" class="mono" rows="2" spellcheck="false" autocomplete="off" maxlength="' + caps.limits.maxInputCharacters + '" data-terminal-input placeholder="' +
+      escapeHtml(ended ? "This session has ended. Start a new one." : running ? "Type input for the running command, then Enter" : "Type a command. Enter sends, Shift+Enter adds a line, Up and Down recall history") + '"' + (ended ? " disabled" : "") + '>' + escapeHtml(draft) + '</textarea>' +
+      '<div class="t-composer-actions"><span class="lab">' + (running ? "Sending to standard input" : ended ? "Ended" : "Command") + '</span>' +
+      '<button class="button primary" type="button" data-action="terminal-send"' + (ended || session.state === "starting" ? " disabled" : "") + '>' + (running ? "Send input" : "Run") + '</button></div></div></section>' +
+      '<section class="panel" data-i="2"><div class="panel-head"><h2>Session</h2><span class="lab">' + escapeHtml(session.id.slice(0, 8)) + '</span></div><ul class="t-limits">' +
+      '<li><span class="lab">State</span>' + escapeHtml(session.stateDetail || terminalStateLabel(session)) + '</li>' +
+      '<li><span class="lab">Started</span>' + escapeHtml(formatDate(session.createdAt)) + '</li>' +
+      '<li><span class="lab">Last activity</span>' + escapeHtml(secondsAgo(session.lastActivityAt)) + ' ago</li>' +
+      (session.exitCode != null ? '<li><span class="lab">Exit code</span>' + escapeHtml(session.exitCode) + '</li>' : "") +
+      '<li><span class="lab">Output kept</span><span><span class="t-meter' + (kept > .9 ? " full" : kept > .7 ? " near" : "") + '"><span data-width="' + (kept * 100).toFixed(1) + '"></span></span> ' + escapeHtml(Math.round(kept * 100)) + '% of ' + escapeHtml(terminalChars(caps.limits.maxRetainedOutputCharacters)) + '</span></li>' +
+      '<li><span class="lab">Idle stop</span>' + caps.limits.idleMinutes + ' minutes</li></ul>' +
+      '<p class="hint">Stop session ends the shell and every program it started. There is no separate cancel for one command.</p></section>';
+  }
+
+  function terminalChars(count) {
+    return count >= 1e6 ? (count / 1e6).toLocaleString(undefined, { maximumFractionDigits: 1 }) + " million characters" : count.toLocaleString() + " characters";
+  }
+
+  function terminalEntryText(event) {
+    return event.text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  }
+
+  function appendTerminalEvent(list, event) {
+    if (event.type === "stdout" || event.type === "stderr") {
+      let block = list.lastElementChild;
+      if (!block || !block.classList.contains("out") || block.dataset.command !== String(event.commandId ?? "")) {
+        block = document.createElement("li");
+        block.className = "t-entry out";
+        block.dataset.command = String(event.commandId ?? "");
+        const pre = document.createElement("pre");
+        block.append(pre);
+        list.append(block);
+      }
+      const span = document.createElement("span");
+      if (event.type === "stderr") { span.className = "err"; block.classList.add("has-err"); }
+      span.textContent = terminalEntryText(event);
+      block.firstElementChild.append(span);
+      return;
+    }
+    const item = document.createElement("li");
+    item.dataset.seq = String(event.seq);
+    if (event.type === "command" || event.type === "input") {
+      item.className = "t-entry " + (event.type === "command" ? "cmd" : "stdin");
+      const label = document.createElement("span");
+      label.className = "lab";
+      label.textContent = (event.type === "command" ? "› " : "input · ") + formatTime(event.at);
+      const pre = document.createElement("pre");
+      pre.textContent = terminalEntryText(event);
+      item.append(label, pre);
+    } else {
+      item.className = "t-entry life" + (event.succeeded === true ? " ok" : event.succeeded === false ? " fail" : "");
+      item.textContent = event.text;
+    }
+    list.append(item);
+  }
+
+  async function fillTranscript() {
+    const terminal = terminalState();
+    const session = activeTerminalSession();
+    const list = root.querySelector("[data-transcript]");
+    const scroller = root.querySelector("[data-terminal-scroll]");
+    if (!session || !list || !scroller) return;
+    const cleared = terminal.clearedAfter[session.id] || 0;
+    let events = (terminal.events[session.id] || []).filter(event => event.seq > cleared);
+    const search = searchFor("terminal");
+    if (search.query || search.mode === "regex") {
+      try { events = await rowSearch("terminal", events, event => event.text); } catch (error) { toast("Search not applied", error.message, true); }
+    }
+    list.textContent = "";
+    if (session.truncated && !cleared) {
+      const marker = document.createElement("li");
+      marker.className = "t-entry life warn";
+      marker.textContent = "Older output was dropped to stay within the output limit.";
+      list.append(marker);
+    }
+    if (!events.length) {
+      const empty = document.createElement("li");
+      empty.className = "t-empty";
+      empty.textContent = search.query ? "No transcript entries match this search." : cleared ? "View cleared. New output appears here." : "Waiting for the shell…";
+      list.append(empty);
+    }
+    for (const event of events) appendTerminalEvent(list, event);
+    if (terminal.follow || terminal.scrollTop == null) scroller.scrollTop = scroller.scrollHeight;
+    else scroller.scrollTop = terminal.scrollTop;
+    scroller.onscroll = () => {
+      const atEnd = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 24;
+      terminal.scrollTop = scroller.scrollTop;
+      if (atEnd !== terminal.follow) {
+        terminal.follow = atEnd;
+        if (atEnd) terminal.unseen = 0;
+        updateFollowButton();
+      }
+    };
+  }
+
+  function updateFollowButton() {
+    const terminal = terminalState();
+    const button = root.querySelector("[data-terminal-follow]");
+    if (!button) return;
+    button.hidden = terminal.follow;
+    button.textContent = (terminal.unseen ? terminal.unseen + " new · " : "") + "Jump to latest";
+  }
+
+  function addTerminalEvents(sessionId, events) {
+    const terminal = terminalState();
+    const store = terminal.events[sessionId] || (terminal.events[sessionId] = []);
+    const last = store.length ? store[store.length - 1].seq : 0;
+    const fresh = events.filter(event => event.seq > last);
+    store.push(...fresh);
+    if (store.length > 4000) store.splice(0, store.length - 4000);
+    if (fresh.length) terminal.cursor[sessionId] = fresh[fresh.length - 1].seq;
+    return fresh;
+  }
+
+  function startTerminalLoop() {
+    const terminal = terminalState();
+    if (!terminal.activeId || terminal.looping === terminal.activeId) return;
+    const token = ++terminal.loop;
+    terminal.looping = terminal.activeId;
+    let backoff = 1000;
+    const done = () => { if (token === terminal.loop) terminal.looping = null; };
+    const step = async () => {
+      if (token !== terminal.loop || !state.user || state.activeView !== "terminal") return done();
+      const session = activeTerminalSession();
+      if (!session || session.id !== terminal.looping) return done();
+      const before = session.state;
+      try {
+        const after = terminal.cursor[session.id] || 0;
+        const result = await request("/api/terminal/sessions/" + encodeURIComponent(session.id) + "?after=" + after + "&wait=" + (terminalEnded(session) ? "false" : "true"));
+        if (token !== terminal.loop) return;
+        backoff = 1000;
+        const reconnected = terminal.conn !== "ok";
+        terminal.conn = "ok";
+        const index = terminal.sessions.findIndex(item => item.id === session.id);
+        if (index >= 0) terminal.sessions[index] = result.session;
+        const fresh = addTerminalEvents(session.id, result.events || []);
+        const list = root.querySelector("[data-transcript]");
+        const searching = searchFor("terminal").query || searchFor("terminal").mode === "regex";
+        if (list && fresh.length && !searching) {
+          list.querySelector(".t-empty")?.remove();
+          for (const event of fresh) appendTerminalEvent(list, event);
+          const scroller = root.querySelector("[data-terminal-scroll]");
+          if (terminal.follow && scroller) scroller.scrollTop = scroller.scrollHeight;
+          else { terminal.unseen += fresh.length; updateFollowButton(); }
+        }
+        for (const event of fresh) {
+          if (event.type === "lifecycle" && event.succeeded === true && event.commandId) playSound("ok");
+          if (event.type === "lifecycle" && event.succeeded === false && event.commandId) playSound("error");
+        }
+        if (result.session.state !== before || reconnected || (searching && fresh.length)) {
+          if (terminalEnded(result.session) && !terminalEnded(session)) announce(result.session.name + ": " + terminalStateLabel(result.session));
+          done();
+          await render();
+          return;
+        }
+        if (terminalEnded(result.session) && !result.more) return done();
+        window.setTimeout(step, result.more ? 0 : 50);
+      } catch (error) {
+        if (token !== terminal.loop) return;
+        if (error.status === 401) { done(); return handleExpiredSession(); }
+        if (error.status === 404) {
+          done();
+          terminal.error = terminalErrors["session-not-found"];
+          await loadTerminal();
+          await render();
+          return;
+        }
+        const previous = terminal.conn;
+        terminal.conn = backoff >= 8000 ? "lost" : "retrying";
+        if (terminal.conn !== previous) await render();
+        const delay = backoff;
+        backoff = Math.min(15000, backoff * 2);
+        window.setTimeout(() => { if (token === terminal.loop) void step(); }, delay);
+      }
+    };
+    void step();
+  }
+
+  function stopTerminalLoop() {
+    const terminal = terminalState();
+    terminal.loop += 1;
+    terminal.looping = null;
+    if (terminal.listTimer) { clearInterval(terminal.listTimer); terminal.listTimer = null; }
+  }
+
+  function afterTerminalRender() {
+    const terminal = terminalState();
+    if (state.activeView !== "terminal" || !state.user) { stopTerminalLoop(); return; }
+    void fillTranscript();
+    const input = root.querySelector("[data-terminal-input]");
+    if (input) {
+      input.oninput = () => { const session = activeTerminalSession(); if (session) terminal.drafts[session.id] = input.value; };
+      input.onkeydown = event => terminalKey(event, input);
+    }
+    startTerminalLoop();
+    if (!terminal.listTimer) {
+      terminal.listTimer = setInterval(async () => {
+        if (state.activeView !== "terminal") return stopTerminalLoop();
+        const previous = JSON.stringify(terminal.sessions.map(item => [item.id, item.state, item.name]));
+        try {
+          const list = await request("/api/terminal/sessions");
+          const next = list.sessions || [];
+          if (JSON.stringify(next.map(item => [item.id, item.state, item.name])) !== previous) { terminal.sessions = next; await render(); }
+        } catch (error) { if (error.status === 401) handleExpiredSession(); }
+      }, 10000);
+    }
+  }
+
+  function terminalKey(event, input) {
+    const terminal = terminalState();
+    const session = activeTerminalSession();
+    if (!session) return;
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      void terminalSend();
+      return;
+    }
+    const history = terminal.history[session.id] || [];
+    const atStart = input.selectionStart === 0 && input.selectionEnd === 0;
+    const atEnd = input.selectionStart === input.value.length;
+    if (event.key === "ArrowUp" && history.length && (atStart || !input.value.includes("\n"))) {
+      event.preventDefault();
+      const index = Math.max(0, (terminal.historyIndex[session.id] ?? history.length) - 1);
+      terminal.historyIndex[session.id] = index;
+      input.value = history[index];
+      terminal.drafts[session.id] = input.value;
+      input.setSelectionRange(input.value.length, input.value.length);
+    } else if (event.key === "ArrowDown" && history.length && (atEnd || !input.value.includes("\n"))) {
+      event.preventDefault();
+      const index = Math.min(history.length, (terminal.historyIndex[session.id] ?? history.length) + 1);
+      terminal.historyIndex[session.id] = index;
+      input.value = index >= history.length ? "" : history[index];
+      terminal.drafts[session.id] = input.value;
+    } else if (event.key === "Escape") {
+      input.blur();
+    }
+  }
+
+  async function terminalSend() {
+    const terminal = terminalState();
+    const session = activeTerminalSession();
+    const input = root.querySelector("[data-terminal-input]");
+    if (!session || !input) return;
+    const text = input.value;
+    const mode = session.state === "running" ? "stdin" : "command";
+    if (mode === "command" && !text.trim()) { toast("Nothing to run", terminalErrors["empty-command"], true); return; }
+    try {
+      const view = await request("/api/terminal/sessions/" + encodeURIComponent(session.id) + "/input", { method: "POST", body: { text, mode } });
+      if (mode === "command") {
+        const history = terminal.history[session.id] || (terminal.history[session.id] = []);
+        if (history[history.length - 1] !== text) history.push(text);
+        if (history.length > 200) history.shift();
+      }
+      terminal.historyIndex[session.id] = undefined;
+      terminal.drafts[session.id] = "";
+      terminal.follow = true;
+      terminal.unseen = 0;
+      const index = terminal.sessions.findIndex(item => item.id === session.id);
+      if (index >= 0) terminal.sessions[index] = view;
+      await render();
+      root.querySelector("[data-terminal-input]")?.focus();
+    } catch (error) {
+      if (error.status === 401) return handleExpiredSession();
+      const code = error.body && error.body.error;
+      toast(mode === "command" ? "Command not sent" : "Input not sent", terminalErrors[code] || error.message, true);
+      if (error.body && error.body.session) {
+        const index = terminal.sessions.findIndex(item => item.id === session.id);
+        if (index >= 0) terminal.sessions[index] = error.body.session;
+        await render();
+      }
+    }
+  }
+
+  async function terminalStart(shell) {
+    const terminal = terminalState();
+    try {
+      const view = await request("/api/terminal/sessions", { method: "POST", body: { shell } });
+      terminal.sessions.push(view);
+      terminal.activeId = view.id;
+      terminal.showNew = false;
+      terminal.follow = true;
+      terminal.error = "";
+      toast("Session started", view.name + " is ready on the controller computer.");
+      await render();
+      root.querySelector("[data-terminal-input]")?.focus();
+    } catch (error) {
+      if (error.status === 401) return handleExpiredSession();
+      toast("Session not started", terminalErrors[error.body && error.body.error] || error.message, true);
+    }
+  }
+
+  function terminalStopPrompt(close) {
+    const session = activeTerminalSession();
+    if (!session) return;
+    if (terminalEnded(session)) return terminalStopConfirmed(session.id, true);
+    openDialog('<h2 id="dialog-title">' + (close ? "Close" : "Stop") + ' ' + escapeHtml(session.name) + '?</h2>' +
+      '<p class="hint">' + (session.state === "running" ? "A command is still running. " : "") + 'The shell and every program it started will be ended. Unsaved work in those programs is lost.</p>' +
+      '<div class="dialog-actions"><button class="button" type="button" data-action="dialog-close">Keep running</button><button class="button danger" type="button" data-action="terminal-stop-confirm" data-id="' + escapeHtml(session.id) + '" data-close="' + Boolean(close) + '">Stop session</button></div>', ".dialog-actions .button");
+  }
+
+  async function terminalStopConfirmed(id, forget) {
+    const terminal = terminalState();
+    try {
+      await request("/api/terminal/sessions/" + encodeURIComponent(id) + (forget ? "?forget=true" : ""), { method: "DELETE" });
+      closeDialog();
+      if (forget) {
+        terminal.sessions = terminal.sessions.filter(item => item.id !== id);
+        delete terminal.events[id];
+        delete terminal.cursor[id];
+        terminal.activeId = (terminal.sessions[terminal.sessions.length - 1] || {}).id || null;
+      } else {
+        toast("Session stopped", "The shell and its programs were ended.");
+      }
+      await loadTerminal();
+      await render();
+    } catch (error) {
+      if (error.status === 401) return handleExpiredSession();
+      toast("Session not stopped", terminalErrors[error.body && error.body.error] || error.message, true);
+    }
+  }
+
+  function terminalRenamePrompt() {
+    const session = activeTerminalSession();
+    if (!session) return;
+    openDialog('<h2 id="dialog-title">Rename session</h2><form class="form-grid" data-form="terminal-rename"><label class="field"><span>Name</span><input name="name" required maxlength="40" value="' + escapeHtml(session.name) + '" autocomplete="off"></label>' +
+      '<div class="dialog-actions"><button class="button" type="button" data-action="dialog-close">Cancel</button><button class="button primary" type="submit">Rename</button></div></form>', 'input[name="name"]');
+  }
+
+  async function terminalRename(name) {
+    const terminal = terminalState();
+    const session = activeTerminalSession();
+    if (!session) return;
+    try {
+      const view = await request("/api/terminal/sessions/" + encodeURIComponent(session.id), { method: "PATCH", body: { name } });
+      const index = terminal.sessions.findIndex(item => item.id === session.id);
+      if (index >= 0) terminal.sessions[index] = view;
+      closeDialog();
+      await render();
+    } catch (error) {
+      toast("Not renamed", terminalErrors[error.body && error.body.error] || error.message, true);
+    }
+  }
+
+  function terminalTranscriptText(session) {
+    const terminal = terminalState();
+    return (terminal.events[session.id] || []).map(event => event.type === "command" ? "> " + event.text : event.type === "input" ? "< " + event.text : event.type === "lifecycle" ? "-- " + event.text : event.text.replace(/\n$/, "")).join("\n");
+  }
+
+  function terminalExport(format) {
+    const session = activeTerminalSession();
+    if (!session) return;
+    const terminal = terminalState();
+    const base = "watchdog-terminal-" + session.name.replace(/[^\w.-]+/g, "-").slice(0, 40);
+    if (format === "json") download(base + ".json", JSON.stringify({ session, events: terminal.events[session.id] || [] }, null, 2), "application/json");
+    else download(base + ".txt", terminalTranscriptText(session), "text/plain");
+    toast("Transcript exported", "The file holds this browser's copy of the transcript. It may include sensitive output.");
+  }
+
   /* Settings */
   function settingSwitch(key, label, hint) {
     return '<div class="setting" data-setting-text="' + escapeHtml(label + " " + hint) + '"><div class="setting-text"><label for="pref-' + key + '">' + escapeHtml(label) + '</label><span class="hint">' + escapeHtml(hint) + '</span></div>' +
@@ -1003,7 +1480,7 @@
       settingSwitch("autoRefresh", "Refresh automatically", "Requests the latest controller state at a fixed interval.") +
       settingSegment("refreshSeconds", "Refresh interval", "How often this browser asks the controller for updates.", [["10", "10 s"], ["15", "15 s"], ["30", "30 s"], ["60", "60 s"]]) +
       settingSwitch("hideHostNames", "Hide computer names", "Masks names in this browser, useful when sharing your screen.") + '</section>' +
-      '<section class="panel" data-i="5"><h2>Operational boundaries</h2><ul class="hint"><li>Only fixed operation identifiers are accepted by the controller.</li><li>Restart, shutdown, stopping a service, ending a process and signing out of the remote tool need an exact typed phrase.</li>' +
+      '<section class="panel" data-i="5"><h2>Operational boundaries</h2><ul class="hint"><li>Only fixed operation identifiers are accepted for paired computers.</li><li>The Terminal page runs commands you type on the controller computer only, as the controller account. Commands and output are never logged or audited. Set WATCHDOG_TERMINAL=disabled on the controller to turn it off.</li><li>Restart, shutdown, stopping a service, ending a process and signing out of the remote tool need an exact typed phrase.</li>' +
       '<li>One-time sign-in and pairing codes are kept in controller memory until they expire and never written to disk or the audit log.</li><li>The browser uses a same-origin, HTTP-only session cookie and stores no bearer token.</li></ul></section>' +
       '</div>';
   }
@@ -1013,6 +1490,7 @@
   async function render() {
     applyPreferences();
     if (!state.user) {
+      stopTerminalLoop();
       root.innerHTML = state.setupRequired ? renderSetup() : renderLogin();
       hydrate(false);
       return;
@@ -1042,6 +1520,7 @@
       }
     }
     if (state.activeView === "settings") filterSettings();
+    afterTerminalRender();
     scheduleRemotePolling();
   }
 
@@ -1057,6 +1536,7 @@
       case "updates": return renderUpdates();
       case "firewall": return renderFirewall();
       case "remote": return renderRemote();
+      case "terminal": return renderTerminal();
       case "operations": return renderOperations();
       case "audit": return renderAudit();
       case "settings": return renderSettings();
@@ -1225,6 +1705,9 @@
       { label: "Toggle theme", group: "Settings", run: () => { state.preferences.theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; savePreferences(); render(); } },
       { label: "Toggle reduced motion", group: "Settings", run: () => { state.preferences.motion = motionReduced() ? "full" : "reduced"; savePreferences(); render(); } },
       { label: "Export settings", group: "Settings", run: exportSettings },
+      { label: "Open terminal", group: "Terminal", run: () => changeView("terminal") },
+      { label: "New PowerShell session", group: "Terminal", run: async () => { changeView("terminal"); await loadTerminal(); await terminalStart("powershell"); } },
+      { label: "New CMD session", group: "Terminal", run: async () => { changeView("terminal"); await loadTerminal(); await terminalStart("cmd"); } },
       { label: "Sign out", group: "Session", run: logout }
     );
     if (host) {
@@ -1563,6 +2046,8 @@
     state.dashboard = null;
     state.telemetry = Object.create(null);
     state.remote = { hostId: null, data: null, error: "", fastUntil: 0, timer: null };
+    stopTerminalLoop();
+    state.terminal = null;
     restartRefreshTimer();
     await render();
   }
@@ -1613,6 +2098,7 @@
     const go = async () => {
       state.activeView = viewId;
       if (viewId === "remote" || viewId === "overview") await loadRemote(false);
+      if (viewId === "terminal") await loadTerminal();
       await render();
       document.getElementById("main-content")?.focus({ preventScroll: true });
       window.scrollTo(0, 0);
@@ -1685,6 +2171,11 @@
       state.pendingSetupError = "";
       return render();
     }
+    if (form.dataset.form === "terminal-rename") {
+      const name = String(data.get("name") || "").trim();
+      if (name.length < 1 || name.length > 40) return toast("Not renamed", terminalErrors["invalid-session-name"], true);
+      return terminalRename(name);
+    }
     if (form.dataset.form === "login") {
       try {
         state.user = await request("/api/session", { method: "POST", body: { username: String(data.get("username") || ""), password: String(data.get("password") || "") } });
@@ -1751,6 +2242,19 @@
     "host-revoke-confirm": target => revokeHostConfirmed(target.dataset.id),
     "remote-op": target => remoteOperation(target.dataset.kind),
     "copy-text": target => copyText(target.dataset.copy || ""),
+    "terminal-tab": target => { const terminal = terminalState(); terminal.activeId = target.dataset.id; terminal.showNew = false; terminal.follow = true; terminal.unseen = 0; terminal.scrollTop = null; void render(); },
+    "terminal-new": () => { terminalState().showNew = true; void loadTerminal().then(render); },
+    "terminal-new-cancel": () => { terminalState().showNew = false; void render(); },
+    "terminal-start": target => terminalStart(target.dataset.shell),
+    "terminal-stop": () => terminalStopPrompt(false),
+    "terminal-close": () => terminalStopPrompt(true),
+    "terminal-stop-confirm": target => terminalStopConfirmed(target.dataset.id, target.dataset.close === "true"),
+    "terminal-rename": terminalRenamePrompt,
+    "terminal-send": terminalSend,
+    "terminal-copy": () => { const session = activeTerminalSession(); if (session) void copyText(terminalTranscriptText(session)); },
+    "terminal-export": target => terminalExport(target.dataset.format),
+    "terminal-clear": () => { const terminal = terminalState(); const session = activeTerminalSession(); if (!session) return; terminal.clearedAfter[session.id] = terminal.cursor[session.id] || 0; void fillTranscript(); toast("View cleared", "Only this browser's view was cleared. The session keeps running."); },
+    "terminal-follow": () => { const terminal = terminalState(); terminal.follow = true; terminal.unseen = 0; const scroller = root.querySelector("[data-terminal-scroll]"); if (scroller) scroller.scrollTop = scroller.scrollHeight; updateFollowButton(); },
     "accent": target => { setPreference("accent", target.dataset.value); void render(); },
     "settings-export": exportSettings,
     "settings-import": () => chooseFile("application/json,.json", importSettings),

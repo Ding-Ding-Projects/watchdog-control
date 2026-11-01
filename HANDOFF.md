@@ -24,7 +24,7 @@ The final deployed-reader browser's four recorded processes and debug listener w
 
 Main build `41241914416`, documentation deployment `41241914487` and publication scan `41241914857` succeeded for `52ebfb7`. The accepted release remains pinned to `8e5eb3d`. Completed task branches are integrated and preserved. Their linked checkout and private evidence remain retained because no configured archive destination is available; no branch, checkout or evidence deletion was performed.
 
-The PowerShell/CMD terminal design handoff remains tracked in [issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3). This hosting acceptance does not establish terminal implementation or complete required-feature coverage.
+The PowerShell/CMD terminal from [issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) is implemented in source ([controller terminal](docs/features/terminal.md)). It passed a local end-to-end check on a Linux controller with a test stand-in shell. Real shells on a Windows controller remain unverified, and the hosting acceptance above does not cover it.
 
 Earlier package results, historical pending states and mock-bridge wizard screenshots are preserved in the [hosting evidence archive](docs/history/hosting-before-0.3.2.md). No prior capture is relabelled as current proof.
 

@@ -99,6 +99,20 @@
     ]
   });
 
+  data.workflows.push({
+    id: 'terminal',
+    title: 'Run commands on the controller',
+    summary: 'Open PowerShell or CMD sessions on the controller computer from a browser on the local network.',
+    state: 'Implemented in source; Windows controller verification pending',
+    article: 'terminal',
+    steps: [
+      'Open Terminal in the dashboard from a browser on the local network.',
+      'Check where commands run and which account they use, then start PowerShell or CMD.',
+      'Type a command and press Enter. While it runs, the box sends standard input to it.',
+      'Stop the session when you are done. It also stops by itself after 15 idle minutes.'
+    ]
+  });
+
   data.siteInventory = [
     ["native-hosting", "Host directly on Windows", "0.3.2 native setup and portable launch verified; release verified", "Candidate 0.3.2 at 8e5eb3d passed packaged native setup with saved verified readiness, strict local/public HTTPS, tunnel recovery and independent saved-startup-launcher execution after the wizard closed. The exact single-file launch, source/version readback, visible hosting state and Finish closure passed. Normal release v0.3.2 has nine verified assets at the same source. Published setup bytes and the locally executed build have different recorded hashes. Public-safe setup screenshots and broader visual coverage remain pending. New-sign-in startup, second-device LAN access and actual Discord delivery are unverified; Discord is deliberately unconfigured."],
     ['container-hosting', 'Run the controller and tunnel in one container', 'AMD64 image published; local runtime pending', 'CI verified image publication, anonymous pull and export. Use the published immutable image with mounted TLS files and optional container-owned temporary access. Discord reads only an explicitly mounted webhook file. Choose one tunnel owner. Local Docker execution and notification delivery remain unverified.'],
@@ -112,11 +126,13 @@
     ['identity-audit', 'Authentication, pairing, and audit', implemented, 'Source includes first-owner pairing, sessions, agent enrollment, revocation, and audit records. Installed behavior remains unverified.'],
     ["deployment-recovery", "Deployment and recovery", "0.3.2 native setup and portable launch verified; release verified", "Candidate 0.3.2 at 8e5eb3d passed packaged native setup with saved verified readiness, strict local/public HTTPS, tunnel recovery and independent saved-startup-launcher execution after the wizard closed. The exact single-file launch, source/version readback, visible hosting state and Finish closure passed. Normal release v0.3.2 has nine verified assets at the same source. Published setup bytes and the locally executed build have different recorded hashes. Public-safe setup screenshots and broader visual coverage remain pending. New-sign-in startup, second-device LAN access and actual Discord delivery are unverified; Discord is deliberately unconfigured."],
     ["setup-assistant", "Automatic setup assistant", "0.3.2 native setup and portable launch verified; release verified", "Candidate 0.3.2 at 8e5eb3d passed packaged native setup with saved verified readiness, strict local/public HTTPS, tunnel recovery and independent saved-startup-launcher execution after the wizard closed. The exact single-file launch, source/version readback, visible hosting state and Finish closure passed. Normal release v0.3.2 has nine verified assets at the same source. Published setup bytes and the locally executed build have different recorded hashes. Public-safe setup screenshots and broader visual coverage remain pending. New-sign-in startup, second-device LAN access and actual Discord delivery are unverified; Discord is deliberately unconfigured."],
+    ['terminal', 'Controller terminal', 'Implemented in source; Windows controller verification pending', 'Owner-only, LAN-only PowerShell and CMD sessions on the controller computer. Verified locally on Linux with a stand-in shell; real shells on Windows are unverified.'],
     ['http-api', 'Controller HTTP API', 'Implemented in source; runtime pending', 'The source defines the LAN API and the Postman category/master collection covers its routes. No live request has been exercised.']
   ];
 
   data.wiki = [
     {"id": "native-hosting", "title": "Native hosting and temporary access", "state": "0.3.2 native setup and portable launch verified; release verified", "body": ["Candidate 0.3.2 at 8e5eb3d passed packaged native setup with saved verified readiness, strict local/public HTTPS, tunnel recovery and independent saved-startup-launcher execution after the wizard closed. The exact single-file launch, source/version readback, visible hosting state and Finish closure passed. Normal release v0.3.2 has nine verified assets at the same source. Published setup bytes and the locally executed build have different recorded hashes. Public-safe setup screenshots and broader visual coverage remain pending. New-sign-in startup, second-device LAN access and actual Discord delivery are unverified; Discord is deliberately unconfigured.", "Historical renderer-only screenshots and earlier package results retain their original provenance in the hosting evidence archive."]},
+    {id:'terminal',title:'Controller terminal',state:'Source implemented; Windows controller verification pending',body:['The Terminal page runs PowerShell or CMD commands on the controller computer as the controller account, for the signed-in owner only.','It refuses requests through temporary public access, tunnels and proxies, and never logs or audits command text or output.','Real shells on a Windows controller have not been verified yet.']},
     {id:'remote-agent',title:'Slop Machine remote control',state:'Source implemented; Windows host verification pending',body:['The dashboard drives the codex command-line tool on a paired computer: status, device-code sign-in assist, remote control start and stop, and phone pairing.','One-time codes stay in controller memory and never reach disk or the audit log.','A Windows host run has not been verified yet.']},
     {"id": "overview", "title": "Project overview", "state": "0.3.2 native setup and portable launch verified; release verified", "body": ["Candidate 0.3.2 at 8e5eb3d passed packaged native setup with saved verified readiness, strict local/public HTTPS, tunnel recovery and independent saved-startup-launcher execution after the wizard closed. The exact single-file launch, source/version readback, visible hosting state and Finish closure passed. Normal release v0.3.2 has nine verified assets at the same source. Published setup bytes and the locally executed build have different recorded hashes. Public-safe setup screenshots and broader visual coverage remain pending. New-sign-in startup, second-device LAN access and actual Discord delivery are unverified; Discord is deliberately unconfigured.", "Historical renderer-only screenshots and earlier package results retain their original provenance in the hosting evidence archive."]},
     {id:'architecture',title:'System architecture',state:'Source implemented; runtime pending',body:['The implementation separates the browser dashboard, authenticated controller API, and Windows host agent.','The server validates fixed operation identifiers and target records. The agent polls for approved work and returns bounded results.','The source builds locally; network, authorization, and installed-host behavior remain unverified.']},
@@ -190,6 +206,18 @@
       ['Codes stay out of records', 'One-time sign-in and pairing codes are kept only in controller memory until they expire. Operation records, the audit log, exports and the controller data file contain a redacted placeholder instead.'],
       ['Signing out', 'Sign out requires the exact typed phrase shown in the dashboard and removes the saved sign-in on that computer.'],
       ['Verification state', 'The controller flow is covered by a local end-to-end check. Running the tool on a real Windows host, including the signed-in user launch path, has not been verified yet.']
+    ]
+  };
+  data.articles['terminal'] = {
+    title: 'Controller terminal', category: 'Remote', state: 'Implemented in source; Windows controller verification pending',
+    lead: 'The Terminal page runs PowerShell or CMD commands on the controller computer, using the controller account, as a chat-style transcript.',
+    sections: [
+      ['Where commands run', 'On the computer that runs the controller, never on paired computers. Inside a container, sessions run in that container and the page says so. Nothing is elevated.'],
+      ['Who and from where', 'Only the signed-in owner, and only from a browser connected directly over the local network. Requests through temporary public access, tunnels or proxies are refused. Set WATCHDOG_TERMINAL=disabled to turn it off.'],
+      ['Using it', 'Start PowerShell or CMD, type a command and press Enter. Shift+Enter adds a line and Up and Down recall history. While a command runs, the box sends standard input. Stop session ends the shell and everything it started.'],
+      ['Limits', 'Four sessions per owner, 16 KB per send, 2 million characters of output kept, a 15-minute idle stop and an 8-hour lifetime.'],
+      ['Records', 'Command text and output stay in controller memory. The audit log records only session start, stop and expiry.'],
+      ['Verification state', 'Verified on a Linux development controller with a stand-in shell. Real PowerShell and CMD on a Windows controller have not been verified yet.']
     ]
   };
 })();

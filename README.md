@@ -1,6 +1,6 @@
 # Watchdog Control
 
-Current development adds [native hosting, verified temporary access, protected Discord notifications and sign-in startup](docs/features/native-hosting.md). The portable setup build now bundles the native controller and hosting tools, so this route does not require Docker. The 0.3.2 packaged native setup, strict local/public endpoint checks, tunnel recovery and independent startup-launcher invocation are verified. Normal release v0.3.2 and its nine assets are verified. [Issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) hands the requested live chat-style PowerShell/CMD terminal to the designer.
+Current development adds [native hosting, verified temporary access, protected Discord notifications and sign-in startup](docs/features/native-hosting.md). The portable setup build now bundles the native controller and hosting tools, so this route does not require Docker. The 0.3.2 packaged native setup, strict local/public endpoint checks, tunnel recovery and independent startup-launcher invocation are verified. Normal release v0.3.2 and its nine assets are verified. The chat-style PowerShell/CMD [controller terminal](docs/features/terminal.md) from [issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) is implemented for the owner on the local network; Windows controller verification is pending.
 
 [Documentation site](https://ding-ding-projects.github.io/watchdog-control/)
 

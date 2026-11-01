@@ -9,7 +9,8 @@
 - [x] Bundle and publish the AMD64 controller/monitor image; anonymous pull and export passed in CI.
 - [ ] Verify a real local Compose run, mounted files, endpoints, notification delivery and shutdown on a supported Docker host.
 - [x] Open [terminal design handoff #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3) with complete required-feature acceptance criteria.
-- [ ] Implement and verify the reviewed terminal design and its authenticated PowerShell/CMD backend.
+- [x] Implement the reviewed terminal design and its authenticated, LAN-only PowerShell/CMD backend ([controller terminal](docs/features/terminal.md)); verified locally on Linux with a stand-in shell.
+- [ ] Verify the terminal with real PowerShell and CMD on a Windows controller.
 
 ## 1. Product workflows
 
