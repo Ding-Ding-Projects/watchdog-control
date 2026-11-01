@@ -1,5 +1,15 @@
 # Current continuation checkpoint
 
+## Integration-only pass, 2026-11-01
+
+The operator requested branch reconciliation and push while explicitly excluding cleanup. Both checked-out working trees were clean, each with 248 tracked files and no nonignored untracked files. There were no stashes. Fetch and fast-forward reconciliation found `main` already current at `362492968580f0983a7aa3cb2b0a2980e5c6f167`.
+
+Every local branch and all four non-default remote branches were proved ancestors of fetched `origin/main`: the documentation branch at `7eb6775`, setup-assistant branch at `adb2fc2`, hosting branch at `52ebfb7`, and release-preparation branch at `8e5eb3d`. No additional merge or recovery commit was needed. This update records the requested no-cleanup boundary; its pushed commit and check results are recorded in the task's rolling progress thread.
+
+Retain all branches, both working trees, private evidence and ignored announcement files. Do not prune, delete, drop stashes or run cleanup as part of this pass. The existing runtime acceptance and terminal-design handoff below remain unchanged; this integration-only pass adds no runtime verification or feature-completion claim.
+
+## Product continuation
+
 Continue Watchdog Control from the verified native-hosting delivery without widening the terminal-design scope. The operator explicitly chose to leave Discord delivery unconfigured. The PowerShell/CMD chat-style terminal remains a designer handoff in [issue #3](https://github.com/Ding-Ding-Projects/watchdog-control/issues/3), not an implemented feature.
 
 The locally executed **0.3.2** build, source `8e5eb3d36e326d799b7ef05388ad85a34539f5df`, passed the exact root `build-installer.bat` entrypoint. The locally executed portable executable has SHA-256 `DFB8D43CE6D31E230CF36D725577DCF248477CAB80FEDBD76E79BF928C760CE5`. The actual packaged Windows assistant completed native setup with saved `verified: true`; strict local and temporary public HTTPS checks passed, including management assets and anonymous management API rejection. Tunnel recovery produced a newly verified address. After the wizard closed, the saved current-user startup launcher independently restarted the monitor, controller and tunnel, and the endpoints again reported 0.3.2.
