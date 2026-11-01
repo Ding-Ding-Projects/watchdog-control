@@ -23,7 +23,11 @@ a step, not a habit.
 
 - Build an authenticated, LAN-scoped Windows host management product.
 - Keep host actions behind typed, server-enforced operations. Do not expose arbitrary shell
-  text, executable selection, or caller-selected file paths.
+  text, executable selection, or caller-selected file paths to remote hosts or agents.
+- The owner-approved controller terminal (issue #3) is the single exception: it runs commands
+  the signed-in owner types, on the controller computer only, in PowerShell or CMD. Keep it
+  owner-only, LAN-only, same-origin, bounded, switchable off with `WATCHDOG_TERMINAL=disabled`,
+  and never log or audit command text or output.
 - Require a deliberate, auditable confirmation for restart and shutdown actions.
 - Keep credentials, certificates, generated configuration, host inventory, and runtime data
   out of tracked source.

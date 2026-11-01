@@ -7,6 +7,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Watchdog.Contracts;
 using Watchdog.Web;
+using Watchdog.Web.Terminal;
 
 if (args is ["--healthcheck"])
 {
@@ -70,6 +71,7 @@ builder.Services.AddSingleton<SessionService>();
 builder.Services.AddSingleton<BootstrapService>();
 builder.Services.AddSingleton<CodexSecretCache>();
 builder.Services.AddSingleton<AgentOperationsService>();
+builder.Services.AddSingleton<Watchdog.Web.Terminal.TerminalService>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -510,6 +512,8 @@ app.MapGet("/api/hosts/{hostId}/codex", (
         operations = view.operations
     });
 });
+
+app.MapTerminal();
 
 app.MapFallbackToFile("index.html");
 app.Run();

@@ -1,6 +1,6 @@
 # Terminal feature matrix (issue #3)
 
-Status as of 2026-10-31 for source `main`. Each row names the control, its consumer, persistence and
+Status as of 2026-11-01 for source `main`. Each row names the control, its consumer, persistence and
 reset, and the current verification state. "Design" means the canvas in this folder specifies it;
 it is not implementation evidence.
 
@@ -8,15 +8,15 @@ it is not implementation evidence.
 
 | Requirement | Control and consumer | Persistence and recovery | State |
 | --- | --- | --- | --- |
-| Discover shells, platform and account; explicit start | Capability card and Start buttons (`New-session.dc.html`) → `GET /api/terminal/capabilities`, `POST /api/terminal/sessions` | None needed; rediscovered on open | Design only. Backend not committed. |
+| Discover shells, platform and account; explicit start | Capability card and Start buttons (`New-session.dc.html`) → `GET /api/terminal/capabilities`, `POST /api/terminal/sessions` | None needed; rediscovered on open | Backend implemented: capabilities and create routes; smoke-tested on Linux (no shells available there). Page not built. |
 | Session tabs: identity, rename, close, active state, explicit New session | Tab strip (`Main.dc.html`) → sessions list, `PATCH`, `DELETE` | Server memory; reload lists sessions again | Design only |
-| Chat-style transcript with command, stdout, stderr, input and lifecycle entries | Transcript (`Main.dc.html`) → `GET …/sessions/{id}?after=N` | Bounded server buffer | Design only |
+| Chat-style transcript with command, stdout, stderr, input and lifecycle entries | Transcript (`Main.dc.html`) → `GET …/sessions/{id}?after=N` | Bounded server buffer | Backend implemented (`?after=N`, optional `wait=true` long poll); page not built |
 | Streaming, follow output, new-output indicator | Follow button (`Main.dc.html`) | Local view state | Design only |
 | Multiline composer, shortcuts, Send, history, stdin, cancellation, exit results | Composer and Stop (`Main.dc.html`, `States.dc.html`) | History per session in the browser tab | Design only |
 | Multiple sessions, reconnect, expired, stopped, disconnected, limit states | States (`States.dc.html`) | Polling backoff; controller restart ends sessions | Design only |
 | Transcript search with regex builder, copy, export, clear local view | Transcript toolbar (`Main.dc.html`) | Independent search state per session | Design only |
-| No commands or output in analytics, request logs or audit | Backend rule; audit records start and stop only | n/a | Design only |
-| Truthful capability discovery; container never labelled as the Windows host | Identity chips (`Main.dc.html`, `New-session.dc.html`) | n/a | Design only |
+| No commands or output in analytics, request logs or audit | Backend rule; audit records start and stop only | n/a | Implemented; verified that test command text does not appear in the controller log |
+| Truthful capability discovery; container never labelled as the Windows host | Identity chips (`Main.dc.html`, `New-session.dc.html`) | n/a | Backend reports container and platform; page not built |
 | User-initiated commands only; no elevation or consent automation | Backend rule | n/a | Design only |
 | Full-screen console programs | Unsupported state (`States.dc.html`) | n/a | Design only; unsupported by intent |
 
@@ -45,6 +45,7 @@ it is not implementation evidence.
 
 ## Implementation state
 
-The backend and terminal page are **not implemented**. The terminal runs commands the owner types
-on the controller computer, so it needs an explicit decision from the owner before it is built;
-see the issue thread for status.
+The controller backend is implemented in `src/Watchdog.Web/Terminal/` and the routes listed in the
+README are live for the signed-in owner. The terminal page is not built yet. No command has been run
+end to end: the development controller used for testing is Linux without PowerShell, and nothing has
+been verified on a Windows host. Set `WATCHDOG_TERMINAL=disabled` to turn the feature off.
